@@ -2,7 +2,7 @@ import torch
 import random
 import numpy as np
 from collections import deque
-from snake_game import SnakeGameAI, Direction, Point
+from snake_game import BLOCK_SIZE, SnakeGameAI, Direction, Point
 
 # how many previous moves will be stored in memory_deque
 MAX_MEMORY = 100_000
@@ -13,14 +13,78 @@ LR = 0.001
 class Agent:
     def __init__(self):
         self.number_of_games = 0
-        self.epsilon = 0 # randomness
-        self.gamme = 0 # discount rate
+        self.epsilon = 0  # randomness
+        self.gamme = 0  # discount rate
         # deque auto removes items if it gets larger than maxlen, popleft()
         self.memory_deque = deque(maxlen=MAX_MEMORY)
         # TODO: model, trainer
 
     def get_state(self, game: SnakeGameAI):
-        pass
+        """From the game, get some parameters and returns a list
+        0: If there is any danger Straight,
+        1: If there is any danger Right,
+        2: If there is any danger Left
+        3: If current direction is left
+        4: If current direction is right
+        5: If current direction is up
+        6: If current direction is down
+        7: Is food on the left
+        8: Is food on the right
+        9: Is food up
+        10: Is food down
+
+        Args:
+            game (SnakeGameAI): the game
+
+        Returns:
+            list: booleans for each game condition
+        """
+        head = game.snake[0]
+
+        # get points around the head
+        point_left = Point(head.x - BLOCK_SIZE, head.y)
+        point_right = Point(head.x + BLOCK_SIZE, head.y)
+        point_up = Point(head.x, head.y - BLOCK_SIZE)
+        point_down = Point(head.x, head.y + BLOCK_SIZE)
+
+        is_direction_right = game.direction == Direction.RIGHT
+        is_direction_left = game.direction == Direction.LEFT
+        is_direction_up = game.direction == Direction.UP
+        is_direction_down = game.direction == Direction.DOWN
+
+        state = [
+            # Danger straight (same direction)
+            (is_direction_right and game.is_collision(point_right)) or
+            (is_direction_left and game.is_collision(point_left)) or
+            (is_direction_up and game.is_collision(point_up)) or
+            (is_direction_down and game.is_collision(point_down)),
+
+            # Danger right (danger is at the right of current direction)
+            (is_direction_right and game.is_collision(point_down)) or
+            (is_direction_left and game.is_collision(point_up)) or
+            (is_direction_up and game.is_collision(point_right)) or
+            (is_direction_down and game.is_collision(point_left)),
+
+            # Danger left (danger is at the left of current direction)
+            (is_direction_right and game.is_collision(point_up)) or
+            (is_direction_left and game.is_collision(point_down)) or
+            (is_direction_up and game.is_collision(point_left)) or
+            (is_direction_down and game.is_collision(point_right)),
+
+            # current direction
+            is_direction_right,
+            is_direction_left,
+            is_direction_up,
+            is_direction_down,
+
+            # food location
+            game.food.x < head.x,  # food left
+            game.food.x > head.x,  # food right
+            game.food.y < head.y,  # food up
+            game.food.y > head.y  # food down
+        ]
+
+        return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, game_over):
         pass
@@ -56,7 +120,8 @@ def train():
         state_new = agent.get_state(game)
 
         # train short memory
-        agent.train_short_memory(state_old, action, reward, state_new, game_over)
+        agent.train_short_memory(
+            state_old, action, reward, state_new, game_over)
 
         # remember
         agent.remember(state_old, action, reward, state_new, game_over)
@@ -66,12 +131,11 @@ def train():
             agent.number_of_games += 1
             if score > best_score:
                 best_score = score
-            print(f'Game {agent.number_of_games} Score {score} Record {best_score}')
+            print(
+                f'Game {agent.number_of_games} Score {score} Record {best_score}')
 
             # train long memory (also called replay memory, or experience replay)
             agent.train_long_memory()
-
-
 
 
 if __name__ == "__main__":
