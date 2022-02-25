@@ -87,7 +87,8 @@ class Agent:
         return np.array(state, dtype=int)
 
     def remember(self, state, action, reward, next_state, game_over):
-        pass
+        # memory_deque calls popleft automatically if size greater than MAX_MEMORY
+        self.memory_deque.append(state, action, reward, next_state, game_over)
 
     def train_long_memory(self):
         # trains in all the previous moves
