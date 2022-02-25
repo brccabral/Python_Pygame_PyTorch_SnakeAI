@@ -1,3 +1,4 @@
+from re import M
 import torch
 import random
 import numpy as np
@@ -111,7 +112,24 @@ class Agent:
         self.trainer.train_step(state, action, reward, next_state, game_over)
 
     def get_action(self, state):
-        pass
+        # random moves: tradeoff between exploration vs exploitation
+        self.epsilon = 80 - self.number_of_games
+        action = [0, 0, 0]
+        # in the beginning this is true for some time, later self.number_of_games is larger
+        # than 80 and this will never get called
+        if random.randint(0, 200) < self.epsilon:
+            move = random.randint(0, 2)
+            action[move] = 1
+        else:
+            state0 = torch.tensor(state, dtype=torch.float)
+            # prediction is a list of floats
+            prediction = self.model.predict(state0)
+            # get the larger number index
+            move = torch.argmax(prediction).item()
+            # set the index to 1
+            action[move] = 1
+
+        return action
 
 
 def train():
