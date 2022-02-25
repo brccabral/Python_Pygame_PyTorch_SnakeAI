@@ -1,3 +1,4 @@
+import imp
 from re import M
 import torch
 import random
@@ -5,6 +6,7 @@ import numpy as np
 from collections import deque
 from model import Linear_QNet, QTrainer
 from snake_game import BLOCK_SIZE, SnakeGameAI, Direction, Point
+from helper import plot
 
 # how many previous moves will be stored in memory_deque
 MAX_MEMORY = 100_000
@@ -172,6 +174,12 @@ def train():
 
             print(
                 f'Game {agent.number_of_games} Score {score} Record {best_score}')
+
+            plot_scores.append(score)
+            total_score += score
+            mean_score = total_score / agent.number_of_games
+            plot_mean_scores.append(mean_score)
+            plot(plot_scores, plot_mean_scores)
 
             # train long memory (also called replay memory, or experience replay)
             agent.train_long_memory()
