@@ -3,6 +3,7 @@ import torch
 import random
 import numpy as np
 from collections import deque
+from model import Linear_QNet
 from snake_game import BLOCK_SIZE, SnakeGameAI, Direction, Point
 
 # how many previous moves will be stored in memory_deque
@@ -19,7 +20,7 @@ class Agent:
         # deque auto removes items if it gets larger than maxlen, popleft()
         self.memory_deque = deque(maxlen=MAX_MEMORY)
 
-        self.model = None  # TODO
+        self.model: Linear_QNet = None  # TODO
         self.trainer = None  # TODO
 
     def get_state(self, game: SnakeGameAI):
@@ -162,6 +163,8 @@ def train():
             agent.number_of_games += 1
             if score > best_score:
                 best_score = score
+                agent.model.save()
+
             print(
                 f'Game {agent.number_of_games} Score {score} Record {best_score}')
 
