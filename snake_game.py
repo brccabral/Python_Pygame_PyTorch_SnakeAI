@@ -40,7 +40,6 @@ class SnakeGameAI:
 
         self.reset()
 
-
     def _place_food(self):
         x = random.randint(0, (self.w-BLOCK_SIZE)//BLOCK_SIZE)*BLOCK_SIZE
         y = random.randint(0, (self.h-BLOCK_SIZE)//BLOCK_SIZE)*BLOCK_SIZE
@@ -49,6 +48,7 @@ class SnakeGameAI:
             self._place_food()
 
     def play_step(self):
+        self.frame_iteration += 1
         # 1. collect user input
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -70,7 +70,7 @@ class SnakeGameAI:
 
         # 3. check if game over
         game_over = False
-        if self._is_collision():
+        if self._is_collision() or self.frame_iteration > 100*len(self.snake):
             game_over = True
             return game_over, self.score
 
@@ -126,11 +126,10 @@ class SnakeGameAI:
             y -= BLOCK_SIZE
 
         self.head = Point(x, y)
-    
+
     def reset(self):
         """reset is called at __init__ and by AI agent
         """
-
 
         # init game state
         self.direction = Direction.RIGHT
@@ -143,7 +142,9 @@ class SnakeGameAI:
         self.score = 0
         self.food = None
         self._place_food()
-        
+        # this will limit the number of moves the snake can make
+        # until it is considered game over, default to 100*snake_size
+        self.frame_iteration = 0
 
 
 if __name__ == '__main__':
