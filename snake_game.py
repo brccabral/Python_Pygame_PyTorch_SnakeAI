@@ -90,12 +90,15 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, game_over, self.score
 
-    def is_collision(self):
+    def is_collision(self, pt: Point = None):
+        if pt is None:
+            pt = self.head
+        
         # hits boundary
-        if self.head.x > self.w - BLOCK_SIZE or self.head.x < 0 or self.head.y > self.h - BLOCK_SIZE or self.head.y < 0:
+        if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
             return True
         # hits itself
-        if self.head in self.snake[1:]:
+        if pt in self.snake[1:]:
             return True
 
         return False
