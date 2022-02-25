@@ -23,6 +23,7 @@ class Linear_QNet(nn.Module):
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
+
 class QTrainer:
     def __init__(self, model: Linear_QNet, lr, gamma):
         self.model = model
@@ -31,4 +32,6 @@ class QTrainer:
 
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
-    
+
+    def train_step(self, state_old, action, reward, state_new, done):
+        pass

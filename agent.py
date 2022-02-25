@@ -3,7 +3,7 @@ import torch
 import random
 import numpy as np
 from collections import deque
-from model import Linear_QNet
+from model import Linear_QNet, QTrainer
 from snake_game import BLOCK_SIZE, SnakeGameAI, Direction, Point
 
 # how many previous moves will be stored in memory_deque
@@ -11,17 +11,22 @@ MAX_MEMORY = 100_000
 BATCH_SIZE = 1000
 LR = 0.001
 
+INPUT_SIZE = 11  # has to be the length of Agent.get_state
+HIDDEN_SIZE = 256
+OUTPUT_SIZE = 3  # has to be the number of possible actions, Agent.get_action
+
 
 class Agent:
     def __init__(self):
         self.number_of_games = 0
         self.epsilon = 0  # randomness
-        self.gamme = 0  # discount rate
+        self.gamma = 0.9  # discount rate, has to be less than 1, usually 0.8-0.99
         # deque auto removes items if it gets larger than maxlen, popleft()
         self.memory_deque = deque(maxlen=MAX_MEMORY)
 
-        self.model: Linear_QNet = None  # TODO
-        self.trainer = None  # TODO
+        self.model: Linear_QNet = Linear_QNet(
+            INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
+        self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
@@ -124,7 +129,7 @@ class Agent:
         else:
             state0 = torch.tensor(state, dtype=torch.float)
             # prediction is a list of floats
-            prediction = self.model.predict(state0)
+            prediction = self.model.forward(state0)
             # get the larger number index
             move = torch.argmax(prediction).item()
             # set the index to 1
