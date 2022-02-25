@@ -17,7 +17,9 @@ class Agent:
         self.gamme = 0  # discount rate
         # deque auto removes items if it gets larger than maxlen, popleft()
         self.memory_deque = deque(maxlen=MAX_MEMORY)
-        # TODO: model, trainer
+
+        self.model = None  # TODO
+        self.trainer = None  # TODO
 
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
@@ -88,15 +90,25 @@ class Agent:
 
     def remember(self, state, action, reward, next_state, game_over):
         # memory_deque calls popleft automatically if size greater than MAX_MEMORY
-        self.memory_deque.append(state, action, reward, next_state, game_over)
+        # store as a tuple containing all variables
+        self.memory_deque.append(
+            (state, action, reward, next_state, game_over))
 
     def train_long_memory(self):
         # trains in all the previous moves
         # increasing agent performance
-        pass
+        if len(self.memory_deque) > BATCH_SIZE:
+            # list of tuples (state, action, reward, next_state, game_over)
+            batch_sample = random.sample(self.memory_deque, BATCH_SIZE)
+        else:
+            batch_sample = self.memory_deque
+
+        states, actions, rewards, next_states, game_overs = zip(*batch_sample)
+        self.trainer.train_step(states, actions, rewards,
+                                next_states, game_overs)
 
     def train_short_memory(self, state, action, reward, next_state, game_over):
-        pass
+        self.trainer.train_step(state, action, reward, next_state, game_over)
 
     def get_action(self, state):
         pass
