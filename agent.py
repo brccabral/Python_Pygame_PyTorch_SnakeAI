@@ -12,7 +12,12 @@ LR = 0.001
 
 class Agent:
     def __init__(self):
-        pass
+        self.number_of_games = 0
+        self.epsilon = 0 # randomness
+        self.gamme = 0 # discount rate
+        # deque auto removes items if it gets larger than maxlen, popleft()
+        self.memory_deque = deque(maxlen=MAX_MEMORY)
+        # TODO: model, trainer
 
     def get_state(self, game: SnakeGameAI):
         pass
