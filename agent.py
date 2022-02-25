@@ -138,6 +138,16 @@ class Agent:
 
         return action
 
+    def get_play(self, state):
+        self.model.eval()
+        action = [0, 0, 0]
+        state0 = torch.tensor(state, dtype=torch.float)
+        prediction = self.model.forward(state0)
+        move = torch.argmax(prediction).item()
+        action[move] = 1
+
+        return action
+
 
 def train():
     plot_scores = []
@@ -184,5 +194,18 @@ def train():
             agent.train_long_memory()
 
 
+def main():
+    agent = Agent()
+    agent.model.load()
+    game = SnakeGameAI()
+    while True:
+        state_old = agent.get_state(game)
+        action = agent.get_play(state_old)
+        reward, game_over, score = game.play_step(action)
+        if game_over:
+            game.reset()
+
+
 if __name__ == "__main__":
-    train()
+    # train()
+    main()
