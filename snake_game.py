@@ -2,6 +2,7 @@ import pygame
 import random
 from enum import Enum
 from collections import namedtuple
+import numpy as np
 
 pygame.init()
 font = pygame.font.Font('arial.ttf', 25)
@@ -47,7 +48,15 @@ class SnakeGameAI:
         if self.food in self.snake:
             self._place_food()
 
-    def play_step(self):
+    def play_step(self, action):
+        """receives an action from the agent and updates the game
+
+        Args:
+            action (list): list of integers that will determine where to move the snake. [straight, right, left]
+
+        Returns:
+            tuple: reward, game_over, score
+        """
         self.frame_iteration += 1
         # 1. collect user input
         for event in pygame.event.get():
@@ -56,7 +65,7 @@ class SnakeGameAI:
                 quit()
 
         # 2. move
-        self._move(self.direction)  # update the head
+        self._move(action)  # update the head
         self.snake.insert(0, self.head)
 
         # 3. check if game over
@@ -104,16 +113,35 @@ class SnakeGameAI:
         self.display.blit(text, [0, 0])
         pygame.display.flip()
 
-    def _move(self, direction):
+    def _move(self, action):
+        """move snake head to new position
+
+        Args:
+            action (list): list of integers that will determine where to move the snake. [straight, right, left]
+        """
+        current_index = self.clock_wise_direction.index(self.direction)
+
+        if np.array_equal(action, [1, 0, 0]):
+            # keep straight, no change
+            next_index = current_index
+        elif np.array_equal(action, [0, 1, 0]):
+            # turn right
+            next_index = (current_index + 1) % 4
+        else:
+            # turn left
+            next_index = (current_index - 1) % 4
+
+        self.direction = self.clock_wise_direction[next_index]
+
         x = self.head.x
         y = self.head.y
-        if direction == Direction.RIGHT:
+        if self.direction == Direction.RIGHT:
             x += BLOCK_SIZE
-        elif direction == Direction.LEFT:
+        elif self.direction == Direction.LEFT:
             x -= BLOCK_SIZE
-        elif direction == Direction.DOWN:
+        elif self.direction == Direction.DOWN:
             y += BLOCK_SIZE
-        elif direction == Direction.UP:
+        elif self.direction == Direction.UP:
             y -= BLOCK_SIZE
 
         self.head = Point(x, y)
@@ -136,6 +164,10 @@ class SnakeGameAI:
         # this will limit the number of moves the snake can make
         # until it is considered game over, default to 100*snake_size
         self.frame_iteration = 0
+        # possible directions in clock wise order
+        # used to get the next move
+        self.clock_wise_direction = [Direction.RIGHT,
+                                     Direction.DOWN, Direction.LEFT, Direction.UP]
 
 
 if __name__ == '__main__':
