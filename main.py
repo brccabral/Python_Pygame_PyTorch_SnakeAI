@@ -37,6 +37,9 @@ while True:
                       event.key == pygame.K_RIGHT, event.key == pygame.K_DOWN]
 
     for index_game, game in enumerate(games):
+        action = [0, 0, 0, 0]
+        random_action_index = random.randint(0, 3)
+        action[random_action_index] = 1
         reward, game_over, score = game.play_step(action)
         if game_over:
             game.reset()
