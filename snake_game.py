@@ -43,6 +43,8 @@ GREEN2 = (0, 255, 100)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
+BLOCK_DRAW_OFFSET = int(BLOCK_SIZE*0.2)
+BLOCK_SIZE_OFFSET = int(BLOCK_SIZE*0.6)
 
 
 class SnakeGameAI:
@@ -118,12 +120,12 @@ class SnakeGameAI:
         pygame.draw.rect(self.display, GREEN1, pygame.Rect(
             self.head.x, self.head.y, BLOCK_SIZE, BLOCK_SIZE))
         pygame.draw.rect(self.display, GREEN2,
-                         pygame.Rect(self.head.x+4, self.head.y+4, 12, 12))
+                         pygame.Rect(self.head.x+BLOCK_DRAW_OFFSET, self.head.y+BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, BLOCK_SIZE_OFFSET))
         for pt in self.snake[1:]:
             pygame.draw.rect(self.display, BLUE1, pygame.Rect(
                 pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
             pygame.draw.rect(self.display, BLUE2,
-                             pygame.Rect(pt.x+4, pt.y+4, 12, 12))
+                             pygame.Rect(self.head.x+BLOCK_DRAW_OFFSET, self.head.y+BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, BLOCK_SIZE_OFFSET))
 
         pygame.draw.rect(self.display, RED, pygame.Rect(
             self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))

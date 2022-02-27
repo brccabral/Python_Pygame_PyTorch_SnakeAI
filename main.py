@@ -1,3 +1,4 @@
+import math
 import sys
 import pygame
 
@@ -15,8 +16,9 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
-
-games = [SnakeGameAI()]
+NUMBER_OF_AGENTS = 8
+games = [SnakeGameAI() for _ in range(NUMBER_OF_AGENTS)]
+square = math.ceil(math.sqrt(len(games)))
 
 while True:
 
@@ -37,7 +39,13 @@ while True:
         reward, game_over, score = game.play_step(action)
         if game_over:
             game.reset()
-            
-        screen.blit(pygame.transform.scale(game.display, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
+
+        game_x = index_game % square
+        game_y = index_game // square
+        game_w = SCREEN_WIDTH // square
+        game_h = SCREEN_HEIGHT // square
+
+        screen.blit(pygame.transform.scale(
+            game.display, (game_w, game_h)), (game_x * game_w, game_y * game_h))
 
     clock.tick(CLOCK_SPEED)
