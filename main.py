@@ -33,8 +33,11 @@ while True:
             action = [event.key == pygame.K_LEFT, event.key == pygame.K_UP,
                       event.key == pygame.K_RIGHT, event.key == pygame.K_DOWN]
 
-    for game in games:
-        game.play_step(action)
-        screen.blit(game.display, (0, 0))
+    for index_game, game in enumerate(games):
+        reward, game_over, score = game.play_step(action)
+        if game_over:
+            game.reset()
+            
+        screen.blit(pygame.transform.scale(game.display, (SCREEN_WIDTH, SCREEN_HEIGHT)), (0, 0))
 
     clock.tick(CLOCK_SPEED)
