@@ -1,4 +1,5 @@
 import math
+import random
 import sys
 import pygame
 
@@ -17,7 +18,7 @@ pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
 NUMBER_OF_AGENTS = 8
-games = [SnakeGameAI() for _ in range(NUMBER_OF_AGENTS)]
+games = [SnakeGameAI(i+1) for i in range(NUMBER_OF_AGENTS)]
 square = math.ceil(math.sqrt(len(games)))
 
 while True:
