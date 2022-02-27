@@ -4,19 +4,34 @@ from enum import Enum
 from collections import namedtuple
 import numpy as np
 
-pygame.init()
-font = pygame.font.Font('arial.ttf', 25)
-#font = pygame.font.SysFont('arial', 25)
-
-
-class Direction(Enum):
-    RIGHT = 1
-    LEFT = 2
-    UP = 3
-    DOWN = 4
-
 
 Point = namedtuple('Point', 'x, y')
+
+
+class Direction:
+    RIGHT = Point(1, 0)
+    LEFT = Point(-1, 0)
+    UP = Point(0, -1)
+    DOWN = Point(0, 1)
+
+    @classmethod
+    def get_direction(cls, current_direction, action=[0,0,0,0]):
+        try:
+            current_index = action.index(1)
+        except ValueError:
+            current_index = -1
+        
+        if current_index==0:
+            return cls.LEFT
+        elif current_index==1:
+            return cls.UP
+        elif current_index==2:
+            return cls.RIGHT
+        elif current_index==3:
+            return cls.DOWN
+        else:
+            return current_direction
+
 
 # rgb colors
 WHITE = (255, 255, 255)
@@ -26,7 +41,6 @@ BLUE2 = (0, 100, 255)
 BLACK = (0, 0, 0)
 
 BLOCK_SIZE = 20
-SPEED = 40
 
 
 class SnakeGameAI:
@@ -35,9 +49,8 @@ class SnakeGameAI:
         self.w = w
         self.h = h
         # init display
-        self.display = pygame.display.set_mode((self.w, self.h))
-        pygame.display.set_caption('Snake')
-        self.clock = pygame.time.Clock()
+        self.display = pygame.Surface((self.w, self.h))
+        self.font = pygame.font.Font('arial.ttf', 25)
 
         self.reset()
 
@@ -58,11 +71,6 @@ class SnakeGameAI:
             tuple: reward, game_over, score
         """
         self.frame_iteration += 1
-        # 1. collect user input
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-                quit()
 
         # 2. move
         self._move(action)  # update the head
@@ -86,7 +94,6 @@ class SnakeGameAI:
 
         # 5. update ui and clock
         self._update_ui()
-        self.clock.tick(SPEED)
         # 6. return game over and score
         return reward, game_over, self.score
 
@@ -115,7 +122,7 @@ class SnakeGameAI:
         pygame.draw.rect(self.display, RED, pygame.Rect(
             self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
 
-        text = font.render("Score: " + str(self.score), True, WHITE)
+        text = self.font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
         pygame.display.flip()
 
@@ -125,30 +132,12 @@ class SnakeGameAI:
         Args:
             action (list): list of integers that will determine where to move the snake. [straight, right, left]
         """
-        current_index = self.clock_wise_direction.index(self.direction)
-
-        if np.array_equal(action, [1, 0, 0]):
-            # keep straight, no change
-            next_index = current_index
-        elif np.array_equal(action, [0, 1, 0]):
-            # turn right
-            next_index = (current_index + 1) % 4
-        else:
-            # turn left
-            next_index = (current_index - 1) % 4
-
-        self.direction = self.clock_wise_direction[next_index]
+        self.direction = Direction.get_direction(self.direction, action)
 
         x = self.head.x
         y = self.head.y
-        if self.direction == Direction.RIGHT:
-            x += BLOCK_SIZE
-        elif self.direction == Direction.LEFT:
-            x -= BLOCK_SIZE
-        elif self.direction == Direction.DOWN:
-            y += BLOCK_SIZE
-        elif self.direction == Direction.UP:
-            y -= BLOCK_SIZE
+        x += self.direction.x*BLOCK_SIZE
+        y += self.direction.y*BLOCK_SIZE
 
         self.head = Point(x, y)
 
@@ -170,7 +159,4 @@ class SnakeGameAI:
         # this will limit the number of moves the snake can make
         # until it is considered game over, default to 100*snake_size
         self.frame_iteration = 0
-        # possible directions in clock wise order
-        # used to get the next move
-        self.clock_wise_direction = [Direction.RIGHT,
-                                     Direction.DOWN, Direction.LEFT, Direction.UP]
+        
