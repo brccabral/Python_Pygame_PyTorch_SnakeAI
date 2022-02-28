@@ -74,32 +74,32 @@ class SnakeGameAI:
         Returns:
             tuple: reward, game_over, score
         """
-        self.frame_iteration += 1
-
-        # 2. move
-        self._move(action)  # update the head
-        self.snake.insert(0, self.head)
-
-        # 3. check if game over
         reward = 0
-        game_over = False
-        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
-            game_over = True
-            reward = -10
-            return reward, game_over, self.score
+        if not self.game_over:
+            self.frame_iteration += 1
 
-        # 4. place new food or just move
-        if self.head == self.food:
-            self.score += 1
-            self._place_food()
-            reward = 10
-        else:
-            self.snake.pop()
+            # 2. move
+            self._move(action)  # update the head
+            self.snake.insert(0, self.head)
+
+            # 3. check if game over
+            if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+                self.game_over = True
+                reward = -10
+                return reward, self.game_over, self.score
+
+            # 4. place new food or just move
+            if self.head == self.food:
+                self.score += 1
+                self._place_food()
+                reward = 10
+            else:
+                self.snake.pop()
 
         # 5. update ui and clock
         self._update_ui()
         # 6. return game over and score
-        return reward, game_over, self.score
+        return reward, self.game_over, self.score
 
     def is_collision(self, pt: Point = None):
         if pt is None:
@@ -167,3 +167,5 @@ class SnakeGameAI:
         # this will limit the number of moves the snake can make
         # until it is considered game over, default to 100*snake_size
         self.frame_iteration = 0
+
+        self.game_over = False

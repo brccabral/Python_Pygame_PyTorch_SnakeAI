@@ -63,6 +63,7 @@ while True:
             if type(play_type) == User_Play_Type:
                 action = play_type.get_action(event)
 
+    total_game_over = 0
     for index_game, individual in enumerate(population):
         if type(play_type) == Play_Type:
             action = play_type.get_action()
@@ -70,7 +71,7 @@ while True:
         individual.reward, individual.game_over, individual.score = individual.game.play_step(
             action)
         if individual.game_over:
-            individual.game.reset()
+            total_game_over += 1
 
         game_x = index_game % square
         game_y = index_game // square
@@ -79,5 +80,9 @@ while True:
 
         screen.blit(pygame.transform.scale(
             individual.game.display, (game_w, game_h)), (game_x * game_w, game_y * game_h))
+
+    if total_game_over == len(population):
+        for individual in population:
+            individual.game.reset()
 
     clock.tick(CLOCK_SPEED)
