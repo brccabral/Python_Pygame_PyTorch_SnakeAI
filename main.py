@@ -1,11 +1,10 @@
-from enum import Enum
 import math
 import random
 import sys
 from typing import List
 import pygame
 
-from snake_game import SnakeGameAI
+from snake_game import WHITE, SnakeGameAI
 from agent import Agent
 from genetic import Individual
 
@@ -15,6 +14,7 @@ pygame.init()
 SCREEN_WIDTH = 640
 SCREEN_HEIGHT = 480
 CLOCK_SPEED = 10
+GAME_DISPLAY_PADDING = 2
 
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
@@ -34,7 +34,7 @@ class Play_Type():
 
 
 class User_Play_Type(Play_Type):
-    def get_action(self, event: pygame.event.Event):
+    def get_action(self, event: pygame.event.Event = None):
         return [event.key == pygame.K_LEFT, event.key == pygame.K_UP,
                 event.key == pygame.K_RIGHT, event.key == pygame.K_DOWN]
 
@@ -43,7 +43,7 @@ class Agent_Play_Type(Play_Type):
     def __init__(self, agent: Agent):
         self.agent = agent
 
-    def get_action(self, state: List):
+    def get_action(self, state: List = None):
         return self.agent.get_action(state)
 
 
@@ -51,6 +51,7 @@ class Agent_Play_Type(Play_Type):
 play_type = Play_Type()
 
 while True:
+    screen.fill(WHITE)
     action = [0, 0, 0, 0]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -73,13 +74,15 @@ while True:
         if individual.game_over:
             total_game_over += 1
 
-        game_x = index_game % square
-        game_y = index_game // square
-        game_w = SCREEN_WIDTH // square
-        game_h = SCREEN_HEIGHT // square
+        game_column = index_game % square
+        game_row = index_game // square
+        game_w = SCREEN_WIDTH // square - GAME_DISPLAY_PADDING
+        game_h = SCREEN_HEIGHT // square - GAME_DISPLAY_PADDING
+        game_x = game_column * (game_w + GAME_DISPLAY_PADDING) + GAME_DISPLAY_PADDING
+        game_y = game_row * (game_h + GAME_DISPLAY_PADDING) + GAME_DISPLAY_PADDING
 
         screen.blit(pygame.transform.scale(
-            individual.game.display, (game_w, game_h)), (game_x * game_w, game_y * game_h))
+            individual.game.display, (game_w, game_h)), (game_x, game_y))
 
     if total_game_over == len(population):
         for individual in population:
