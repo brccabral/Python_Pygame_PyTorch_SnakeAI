@@ -20,9 +20,9 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
-NUMBER_OF_AGENTS = 8
-population = [Individual(SnakeGameAI(), i) for i in range(NUMBER_OF_AGENTS)]
-square = math.ceil(math.sqrt(len(population)))
+NUMBER_OF_AGENTS = 1
+population = [Individual(SnakeGameAI(), i, NUMBER_OF_AGENTS, SCREEN_WIDTH,
+                         SCREEN_HEIGHT, GAME_DISPLAY_PADDING) for i in range(NUMBER_OF_AGENTS)]
 
 
 class Play_Type():
@@ -47,11 +47,11 @@ class Agent_Play_Type(Play_Type):
         return self.agent.get_action(state)
 
 
-# play_type = User_Play_Type()
-play_type = Play_Type()
+play_type = User_Play_Type()
+# play_type = Play_Type()
 
 while True:
-    screen.fill(WHITE)
+    # screen.fill(WHITE)
     action = [0, 0, 0, 0]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -74,15 +74,8 @@ while True:
         if individual.game_over:
             total_game_over += 1
 
-        game_column = index_game % square
-        game_row = index_game // square
-        game_w = SCREEN_WIDTH // square - GAME_DISPLAY_PADDING
-        game_h = SCREEN_HEIGHT // square - GAME_DISPLAY_PADDING
-        game_x = game_column * (game_w + GAME_DISPLAY_PADDING) + GAME_DISPLAY_PADDING
-        game_y = game_row * (game_h + GAME_DISPLAY_PADDING) + GAME_DISPLAY_PADDING
-
         screen.blit(pygame.transform.scale(
-            individual.game.display, (game_w, game_h)), (game_x, game_y))
+            individual.game.display, (individual.game_w, individual.game_h)), (individual.game_x, individual.game_y))
 
     if total_game_over == len(population):
         for individual in population:
