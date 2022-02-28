@@ -4,7 +4,7 @@ import sys
 from typing import List
 import pygame
 
-from snake_game import WHITE, SnakeGameAI
+from snake_game import BLACK, WHITE, SnakeGameAI
 from agent import Agent
 from genetic import Individual
 
@@ -20,7 +20,7 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
-NUMBER_OF_AGENTS = 1
+NUMBER_OF_AGENTS = 2
 population = [Individual(SnakeGameAI(), i, NUMBER_OF_AGENTS, SCREEN_WIDTH,
                          SCREEN_HEIGHT, GAME_DISPLAY_PADDING) for i in range(NUMBER_OF_AGENTS)]
 
@@ -51,7 +51,7 @@ play_type = User_Play_Type()
 # play_type = Play_Type()
 
 while True:
-    # screen.fill(WHITE)
+    screen.fill(WHITE)
     action = [0, 0, 0, 0]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
@@ -81,4 +81,5 @@ while True:
         for individual in population:
             individual.game.reset()
 
+    pygame.display.update()
     clock.tick(CLOCK_SPEED)

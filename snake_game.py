@@ -131,7 +131,7 @@ class SnakeGameAI:
 
         text = self.font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
-        pygame.display.flip()
+        # pygame.display.update()
 
     def _move(self, action):
         """move snake head to new position
