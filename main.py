@@ -6,7 +6,7 @@ import pygame
 
 from snake_game import BLACK, WHITE, SnakeGameAI
 from agent import Agent
-from genetic import Individual
+from genetic import GeneticStats, Individual
 
 pygame.init()
 
@@ -23,6 +23,7 @@ clock = pygame.time.Clock()
 NUMBER_OF_AGENTS = 2
 population = [Individual(SnakeGameAI(), i, NUMBER_OF_AGENTS, SCREEN_WIDTH - 400,
                          SCREEN_HEIGHT, GAME_DISPLAY_PADDING) for i in range(NUMBER_OF_AGENTS)]
+genetic_stats = GeneticStats(NUMBER_OF_AGENTS)
 
 
 class Play_Type():
@@ -71,13 +72,27 @@ while True:
 
         individual.reward, individual.game_over, individual.score = individual.game.play_step(
             action)
+
         if individual.game_over:
             total_game_over += 1
+
+        if individual.score > genetic_stats.best_score_all_time:
+            genetic_stats.best_score_all_time = individual.score
+
+        if individual.score > genetic_stats.best_score_generation:
+            genetic_stats.best_score_generation = individual.score
+            genetic_stats.best_individual = individual.id
 
         screen.blit(pygame.transform.scale(
             individual.game.display, (individual.game_w, individual.game_h)), (individual.game_x, individual.game_y))
 
+        genetic_stats.update_ui()
+        screen.blit(pygame.transform.scale(genetic_stats.display,
+                    (genetic_stats.w, genetic_stats.h)), (SCREEN_WIDTH - 370, 0))
+
     if total_game_over == len(population):
+        genetic_stats.best_score_generation = 0
+        genetic_stats.generation_count += 1
         for individual in population:
             individual.game.reset()
 
