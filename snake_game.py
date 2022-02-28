@@ -49,8 +49,7 @@ BLOCK_SIZE_OFFSET = int(BLOCK_SIZE*0.6)
 
 class SnakeGameAI:
 
-    def __init__(self, id=random.randint(0, 10), w=640, h=480):
-        self.id = id
+    def __init__(self, w=640, h=480):
         self.w = w
         self.h = h
         # init display
