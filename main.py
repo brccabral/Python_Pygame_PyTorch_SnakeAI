@@ -11,7 +11,7 @@ from genetic import Individual
 pygame.init()
 
 
-SCREEN_WIDTH = 640
+SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 480
 CLOCK_SPEED = 10
 GAME_DISPLAY_PADDING = 2
@@ -21,7 +21,7 @@ pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
 NUMBER_OF_AGENTS = 2
-population = [Individual(SnakeGameAI(), i, NUMBER_OF_AGENTS, SCREEN_WIDTH,
+population = [Individual(SnakeGameAI(), i, NUMBER_OF_AGENTS, SCREEN_WIDTH - 400,
                          SCREEN_HEIGHT, GAME_DISPLAY_PADDING) for i in range(NUMBER_OF_AGENTS)]
 
 
