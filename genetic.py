@@ -7,16 +7,16 @@ from snake_game import SnakeGameAI
 
 
 class Individual:
-    def __init__(self, game: SnakeGameAI, id, number_of_individuals, display_padding):
+    def __init__(self, game: SnakeGameAI, order):
         self.game = game
         self.game_over = False
         self.reward = 0
         self.score = 0
-        self.id = id
-        self.number_of_individuals = number_of_individuals
+        self.number_of_individuals = NUMBER_OF_AGENTS
         self.screen_w = GAME_WIDTH
         self.screen_h = GAME_HEIGHT
-        self.display_padding = display_padding
+        self.display_padding = GAME_DISPLAY_PADDING
+        self.order = order
         self.set_display()
         self.fitness = 0
 
@@ -25,10 +25,14 @@ class Individual:
 
         self.total_board_size = length_x*length_y
 
+    def set_order(self, order):
+        self.order = order
+        self.set_display()
+
     def set_display(self):
         square = math.ceil(math.sqrt(self.number_of_individuals))
-        game_column = self.id % square
-        game_row = self.id // square
+        game_column = self.order % square
+        game_row = self.order // square
         self.game_w = self.screen_w // square - self.display_padding
         self.game_h = self.screen_h // square - self.display_padding
         self.game_x = game_column * \
@@ -39,11 +43,20 @@ class Individual:
     def update_fitness(self):
         self.fitness = len(self.game.snake)/self.total_board_size
 
-    def copy(self, id):
-        return Individual(SnakeGameAI(), id=id, number_of_individuals=self.number_of_individuals, display_padding=self.display_padding)
+    def copy(self, order):
+        return Individual(SnakeGameAI(), order=order)
+
+    def cross_over(self, parent2, order):
+        # TODO : create child from cross_over
+        child = Individual(SnakeGameAI(), order)
+        return child
+
+    def mutate(self, order):
+        # TODO
+        return Individual(SnakeGameAI(), order)
 
     def __repr__(self):
-        return f'Id {self.id} Score {self.score} X {self.game_x} Y {self.game_y}'
+        return f'Id {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
 
 
 class GeneticStats:
@@ -76,9 +89,9 @@ class GeneticStats:
 
 
 class GeneticAlgo:
-    def __init__(self, population_size=1, display_padding=2, generation_limit=100):
-        self.population_size = population_size
-        self.display_padding = display_padding
+    def __init__(self, generation_limit=100):
+        self.population_size = NUMBER_OF_AGENTS
+        self.display_padding = GAME_DISPLAY_PADDING
 
         length_x = GAME_WIDTH//BLOCK_SIZE
         length_y = GAME_HEIGHT//BLOCK_SIZE
@@ -91,24 +104,40 @@ class GeneticAlgo:
     def fitness(self, individual: Individual):
         return len(individual.game.snake)/self.total_board_size
 
-    def new_individual(self, id):
-        return Individual(SnakeGameAI(), id=id, number_of_individuals=self.population_size, display_padding=self.display_padding)
+    def new_individual(self, order):
+        return Individual(SnakeGameAI(), order=order)
 
-    def new_population(self, new_population: List[Individual] = None):
-        if new_population is None:
+    def new_population(self, population: List[Individual] = None) -> List[Individual]:
+        if population is None:
             return self.generate_population()
 
-        new_population = sorted(
-            new_population, key=lambda individual: individual.fitness, reverse=True)
-        if len(new_population) == 1:
-            return new_population
-        elif len(new_population) <= 3:
-            new_population.append(new_population[0])
-            new_population.append(self.mutate(new_population[1]))
-            new_population.append(self.new_individual(2))
-        elif 4 <= len(new_population):
-            pass
+        # sort based on fitness
+        population = sorted(
+            population, key=lambda individual: individual.fitness, reverse=True)
 
-    def mutate(self, individual: Individual):
-        # TODO
-        return individual
+        new_population: List[Individual] = []
+        if len(population) == 1:
+            return population
+        elif len(population) == 2:
+            new_population.append(population[0])
+            new_population.append(self.new_individual(1))
+        elif len(population) <= 4:
+            new_population.append(population[0])
+            new_population.append(population[1].mutate())
+            for order in range(2, len(population)):
+                new_population.append(self.new_individual(order))
+        else:
+            p1, p2 = population[0], population[1]
+            new_population.append(p1)
+            new_population.append(p1.cross_over(p2, 1))
+            new_population.append(p2.cross_over(p1, 2))
+            for order, individual in enumerate(population[2:len(population)//2]):
+                new_population.append(individual.mutate(order + 2))
+            for order in range(len(population)//2, len(population)-1):
+                new_population.append(self.new_individual(order + 1))
+
+        # reset order
+        for order, individual in enumerate(new_population):
+            individual.set_order(order)
+
+        return new_population
