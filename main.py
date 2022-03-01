@@ -4,9 +4,8 @@ from typing import List
 import pygame
 from settings import *
 
-from snake_game import SnakeGameAI
 from agent import Agent
-from genetic import GeneticStats, Individual
+from genetic import GeneticAlgo, GeneticStats, Individual
 
 pygame.init()
 
@@ -15,8 +14,9 @@ screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
-population = [Individual(SnakeGameAI(), id=i, number_of_individuals=NUMBER_OF_AGENTS,
-                         display_padding=GAME_DISPLAY_PADDING) for i in range(NUMBER_OF_AGENTS)]
+genetic_algo = GeneticAlgo()
+
+population = genetic_algo.new_population()
 genetic_stats = GeneticStats(NUMBER_OF_AGENTS)
 best_individual_generation: Individual = population[0]
 
@@ -61,7 +61,7 @@ while True:
                 action = play_type.get_action(event)
 
     total_game_over = 0
-    for index_game, individual in enumerate(population):
+    for individual in population:
         if type(play_type) == Play_Type:
             action = play_type.get_action()
 
@@ -77,11 +77,13 @@ while True:
 
         if individual.score > genetic_stats.best_score_generation:
             genetic_stats.best_score_generation = individual.score
-            genetic_stats.best_individual = individual.id
+            genetic_stats.best_individual = individual.order
             best_individual_generation = individual
 
-        screen.blit(pygame.transform.scale(
-            individual.game.display, (individual.game_w, individual.game_h)), (individual.game_x, individual.game_y))
+        if individual.order <= 15:
+            individual.game.update_ui()
+            screen.blit(pygame.transform.scale(
+                individual.game.display, (individual.game_w, individual.game_h)), (individual.game_x, individual.game_y))
 
         genetic_stats.update_ui()
         screen.blit(pygame.transform.scale(genetic_stats.display,
@@ -97,7 +99,10 @@ while True:
         if population[0].fitness >= 1:
             winner = population[0]
             print(
-                f'Generation {genetic_stats.generation_count} has a winner ID {population[0].id}')
+                f'Generation {genetic_stats.generation_count} has a winner ID {population[0].order}')
+            break
+
+        if genetic_stats.generation_count > MAX_GENERATIONS:
             break
 
         genetic_stats.best_score_generation = 0
@@ -105,8 +110,7 @@ while True:
         for individual in population:
             individual.game.reset()
 
-        if genetic_stats.generation_count > MAX_GENERATIONS:
-            break
+        population = genetic_algo.new_population(population)
 
     pygame.display.update()
     clock.tick(CLOCK_SPEED)
