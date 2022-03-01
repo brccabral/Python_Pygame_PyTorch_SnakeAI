@@ -16,6 +16,8 @@ SCREEN_HEIGHT = 480
 CLOCK_SPEED = 10
 GAME_DISPLAY_PADDING = 2
 
+MAX_GENERATIONS = 100
+
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
@@ -73,6 +75,7 @@ while True:
 
         individual.reward, individual.game_over, individual.score = individual.game.play_step(
             action)
+        individual.update_fitness()
 
         if individual.game_over:
             total_game_over += 1
@@ -95,11 +98,27 @@ while True:
         screen.blit(pygame.transform.scale(best_individual_generation.game.display,
                     (individual.game_w, individual.game_h)), (SCREEN_WIDTH - 450, 200))
 
+    # all games have ended, generation is done
     if total_game_over == len(population):
+        population = sorted(
+            population, key=lambda individual: individual.fitness, reverse=True)
+        if population[0].fitness >= 1:
+            winner = population[0]
+            print(
+                f'Generation {genetic_stats.generation_count} has a winner ID {population[0].id}')
+            break
+
         genetic_stats.best_score_generation = 0
         genetic_stats.generation_count += 1
         for individual in population:
             individual.game.reset()
 
+        if genetic_stats.generation_count > MAX_GENERATIONS:
+            break
+
     pygame.display.update()
     clock.tick(CLOCK_SPEED)
+
+# TODO : save winner
+
+pygame.quit()
