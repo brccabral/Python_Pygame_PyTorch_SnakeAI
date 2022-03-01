@@ -59,6 +59,11 @@ class Individual:
         return f'Id {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
 
 
+class IndividualAI(object):
+    def __init__(self):
+        super().__init__()
+
+
 class GeneticStats:
     def __init__(self, population_size=1, w=350, h=480):
         self.w = w
@@ -115,6 +120,10 @@ class GeneticAlgo:
         population = sorted(
             population, key=lambda individual: individual.fitness, reverse=True)
 
+        # reset order
+        for order, individual in enumerate(population):
+            individual.set_order(order)
+
         new_population: List[Individual] = []
         if len(population) == 1:
             return population
@@ -123,7 +132,7 @@ class GeneticAlgo:
             new_population.append(self.new_individual(1))
         elif len(population) <= 4:
             new_population.append(population[0])
-            new_population.append(population[1].mutate())
+            new_population.append(population[1].mutate(1))
             for order in range(2, len(population)):
                 new_population.append(self.new_individual(order))
         else:
@@ -131,13 +140,9 @@ class GeneticAlgo:
             new_population.append(p1)
             new_population.append(p1.cross_over(p2, 1))
             new_population.append(p2.cross_over(p1, 2))
-            for order, individual in enumerate(population[2:len(population)//2]):
-                new_population.append(individual.mutate(order + 2))
-            for order in range(len(population)//2, len(population)-1):
-                new_population.append(self.new_individual(order + 1))
-
-        # reset order
-        for order, individual in enumerate(new_population):
-            individual.set_order(order)
+            for order, individual in enumerate(population[3:len(population)//2]):
+                new_population.append(individual.mutate(order + 3))
+            for order in range(len(population)//2, len(population)):
+                new_population.append(self.new_individual(order))
 
         return new_population
