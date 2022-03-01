@@ -1,19 +1,19 @@
 import math
 import pygame
 
-from snake_game import BLACK, WHITE, SnakeGameAI
+from snake_game import SnakeGameAI
 
 
 class Individual:
-    def __init__(self, game: SnakeGameAI, id, number_of_individuals, screen_w, screen_h, display_padding):
+    def __init__(self, game: SnakeGameAI, id, number_of_individuals, display_padding):
         self.game = game
         self.game_over = False
         self.reward = 0
         self.score = 0
         self.id = id
         self.number_of_individuals = number_of_individuals
-        self.screen_w = screen_w
-        self.screen_h = screen_h
+        self.screen_w = SnakeGameAI.GAME_WIDTH
+        self.screen_h = SnakeGameAI.GAME_HEIGHT
         self.display_padding = display_padding
         self.set_display()
 
@@ -46,16 +46,34 @@ class GeneticStats:
         self.generation_count = 0
 
     def update_ui(self):
-        self.display.fill(WHITE)
+        self.display.fill(SnakeGameAI.WHITE)
         text = self.font.render(
-            f"Best Score All Time: {self.best_score_all_time}", True, BLACK)
+            f"Best Score All Time: {self.best_score_all_time}", True, SnakeGameAI.BLACK)
         self.display.blit(text, [10, 10])
         text = self.font.render(
-            f"Best Score Generation: {self.best_score_generation}", True, BLACK)
+            f"Best Score Generation: {self.best_score_generation}", True, SnakeGameAI.BLACK)
         self.display.blit(text, [10, 30])
         text = self.font.render(
-            f"Best Individual: {self.best_individual}", True, BLACK)
+            f"Best Individual: {self.best_individual}", True, SnakeGameAI.BLACK)
         self.display.blit(text, [10, 50])
         text = self.font.render(
-            f"Generation: {self.generation_count}", True, BLACK)
+            f"Generation: {self.generation_count}", True, SnakeGameAI.BLACK)
         self.display.blit(text, [10, 70])
+
+
+class GeneticAlgo:
+    def __init__(self, population_size=1, display_padding=2):
+        self.population_size = population_size
+        self.display_padding = display_padding
+
+        length_x = SnakeGameAI.GAME_WIDTH//SnakeGameAI.BLOCK_SIZE
+        length_y = SnakeGameAI.GAME_HEIGHT//SnakeGameAI.BLOCK_SIZE
+
+        self.total_board_size = length_x*length_y
+
+    def generate_population(self):
+        return [Individual(SnakeGameAI(), id=i, number_of_individuals=self.population_size, screen_w=self.game_w,
+                           screen_h=self.game_h, display_padding=self.display_padding) for i in range(self.population_size)]
+
+    def fitness(self, individual: Individual):
+        return len(individual.game.snake)/self.total_board_size

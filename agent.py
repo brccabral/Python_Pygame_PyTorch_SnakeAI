@@ -1,10 +1,9 @@
-from re import M
 import torch
 import random
 import numpy as np
 from collections import deque
 from model import Linear_QNet, QTrainer
-from snake_game import BLOCK_SIZE, SnakeGameAI, Direction, Point
+from snake_game import SnakeGameAI, Direction, Point
 from helper import plot
 
 # how many previous moves will be stored in memory_deque
@@ -52,10 +51,10 @@ class Agent:
         head = game.snake[0]
 
         # get points around the head
-        point_left = Point(head.x - BLOCK_SIZE, head.y)
-        point_right = Point(head.x + BLOCK_SIZE, head.y)
-        point_up = Point(head.x, head.y - BLOCK_SIZE)
-        point_down = Point(head.x, head.y + BLOCK_SIZE)
+        point_left = Point(head.x - SnakeGameAI.BLOCK_SIZE, head.y)
+        point_right = Point(head.x + SnakeGameAI.BLOCK_SIZE, head.y)
+        point_up = Point(head.x, head.y - SnakeGameAI.BLOCK_SIZE)
+        point_down = Point(head.x, head.y + SnakeGameAI.BLOCK_SIZE)
 
         is_direction_right = game.direction == Direction.RIGHT
         is_direction_left = game.direction == Direction.LEFT
