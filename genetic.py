@@ -47,11 +47,15 @@ class GeneticStats:
 
     def update_ui(self):
         self.display.fill(WHITE)
-        text = self.font.render(f"Best Score All Time: {self.best_score_all_time}", True, BLACK)
+        text = self.font.render(
+            f"Best Score All Time: {self.best_score_all_time}", True, BLACK)
         self.display.blit(text, [10, 10])
-        text = self.font.render(f"Best Score Generation: {self.best_score_generation}", True, BLACK)
+        text = self.font.render(
+            f"Best Score Generation: {self.best_score_generation}", True, BLACK)
         self.display.blit(text, [10, 30])
-        text = self.font.render(f"Best Individual: {self.best_individual}", True, BLACK)
+        text = self.font.render(
+            f"Best Individual: {self.best_individual}", True, BLACK)
         self.display.blit(text, [10, 50])
-        text = self.font.render(f"Generation: {self.generation_count}", True, BLACK)
+        text = self.font.render(
+            f"Generation: {self.generation_count}", True, BLACK)
         self.display.blit(text, [10, 70])
