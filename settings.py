@@ -1,4 +1,7 @@
 # rgb colors
+from enum import Enum
+
+
 WHITE = (255, 255, 255)
 RED = (200, 0, 0)
 BLUE1 = (0, 0, 255)
@@ -26,10 +29,17 @@ CLOCK_SPEED = 10
 MAX_GENERATIONS = 100
 NUMBER_OF_AGENTS = 16
 
+class Play_Type(Enum):
+    RANDOM = 1
+    USER = 2
+    AI = 3
+
+PLAY_TYPE = Play_Type.USER
+
 # agent training
 MAX_MEMORY = 100_000 # how many previous moves will be stored in memory_deque
 BATCH_SIZE = 1000
 LR = 0.001
 INPUT_SIZE = 11  # has to be the length of Agent.get_state
 HIDDEN_SIZE = 256
-OUTPUT_SIZE = 3  # has to be the number of possible actions, Agent.get_action
+OUTPUT_SIZE = 4  # has to be the number of possible actions, Agent.get_action

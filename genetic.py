@@ -1,9 +1,40 @@
 import math
+import random
 from typing import List
 import pygame
+from agent import Agent
 from settings import *
 
 from snake_game import SnakeGameAI
+
+
+class Agent_Play_Type():
+    def get_action(self):
+        return [0 for _ in range(OUTPUT_SIZE)]
+
+
+class Random_Play_Type(Agent_Play_Type):
+    def get_action(self):
+        action = [0 for _ in range(OUTPUT_SIZE)]
+        random_action_index = random.randint(0, 3)
+        action[random_action_index] = 1
+        return action
+
+
+class User_Play_Type(Agent_Play_Type):
+    def get_action(self, event: pygame.event.Event = None):
+        if event is not None:
+            return [event.key == pygame.K_LEFT, event.key == pygame.K_UP,
+                    event.key == pygame.K_RIGHT, event.key == pygame.K_DOWN]
+        return [0 for _ in range(OUTPUT_SIZE)]
+
+
+class AI_Play_Type(Agent_Play_Type):
+    def __init__(self, agent: Agent):
+        self.agent = agent
+
+    def get_action(self, state: List = None):
+        return self.agent.get_action(state)
 
 
 class Individual:
@@ -24,6 +55,11 @@ class Individual:
         length_y = GAME_HEIGHT//BLOCK_SIZE
 
         self.total_board_size = length_x*length_y
+
+        if PLAY_TYPE == Play_Type.RANDOM:
+            self.set_agent(Random_Play_Type())
+        elif PLAY_TYPE == Play_Type.AI:
+            self.set_agent(AI_Play_Type())
 
     def set_order(self, order):
         self.order = order
@@ -54,6 +90,9 @@ class Individual:
     def mutate(self, order):
         # TODO
         return Individual(SnakeGameAI(), order)
+
+    def set_agent(self, agent: Agent_Play_Type):
+        self.agent = agent
 
     def __repr__(self):
         return f'Id {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
@@ -109,7 +148,7 @@ class GeneticAlgo:
     def fitness(self, individual: Individual):
         return len(individual.game.snake)/self.total_board_size
 
-    def new_individual(self, order):
+    def new_individual(self, order, play_type: Play_Type = Play_Type.RANDOM):
         return Individual(SnakeGameAI(), order=order)
 
     def new_population(self, population: List[Individual] = None) -> List[Individual]:

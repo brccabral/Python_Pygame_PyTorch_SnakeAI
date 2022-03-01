@@ -1,11 +1,8 @@
-import random
 import sys
-from typing import List
 import pygame
 from settings import *
 
-from agent import Agent
-from genetic import GeneticAlgo, GeneticStats, Individual
+from genetic import AI_Play_Type, GeneticAlgo, GeneticStats, Individual, Random_Play_Type, User_Play_Type
 
 pygame.init()
 
@@ -21,34 +18,13 @@ genetic_stats = GeneticStats(NUMBER_OF_AGENTS)
 best_individual_generation: Individual = population[0]
 
 
-class Play_Type():
-    def get_action(self, state: List = None):
-        action = [0, 0, 0, 0]
-        random_action_index = random.randint(0, 3)
-        action[random_action_index] = 1
-        return action
+agent_play_type = User_Play_Type()
+# agent_play_type = Agent_Play_Type()
 
-
-class User_Play_Type(Play_Type):
-    def get_action(self, event: pygame.event.Event = None):
-        return [event.key == pygame.K_LEFT, event.key == pygame.K_UP,
-                event.key == pygame.K_RIGHT, event.key == pygame.K_DOWN]
-
-
-class Agent_Play_Type(Play_Type):
-    def __init__(self, agent: Agent):
-        self.agent = agent
-
-    def get_action(self, state: List = None):
-        return self.agent.get_action(state)
-
-
-play_type = User_Play_Type()
-# play_type = Play_Type()
 
 while True:
     screen.fill(WHITE)
-    action = [0, 0, 0, 0]
+    action = [0 for _ in range(OUTPUT_SIZE)]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -57,13 +33,13 @@ while True:
             if event.key == pygame.K_ESCAPE:
                 pygame.quit()
                 sys.exit()
-            if type(play_type) == User_Play_Type:
-                action = play_type.get_action(event)
+            if PLAY_TYPE == Play_Type.USER:
+                action = agent_play_type.get_action(event)
 
     total_game_over = 0
     for individual in population:
-        if type(play_type) == Play_Type:
-            action = play_type.get_action()
+        if PLAY_TYPE != Play_Type.USER:
+            action = individual.agent.get_action()
 
         individual.reward, individual.game_over, individual.score = individual.game.play_step(
             action)
