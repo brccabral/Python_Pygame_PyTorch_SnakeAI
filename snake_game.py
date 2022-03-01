@@ -83,8 +83,6 @@ class SnakeGameAI:
             else:
                 self.snake.pop()
 
-        # 5. update ui and clock
-        self._update_ui()
         # 6. return game over and score
         return reward, self.game_over, self.score
 
@@ -101,7 +99,7 @@ class SnakeGameAI:
 
         return False
 
-    def _update_ui(self):
+    def update_ui(self):
         self.display.fill(BLACK)
 
         pygame.draw.rect(self.display, GREEN1, pygame.Rect(
