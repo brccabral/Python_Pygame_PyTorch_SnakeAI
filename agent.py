@@ -5,15 +5,7 @@ from collections import deque
 from model import Linear_QNet, QTrainer
 from snake_game import SnakeGameAI, Direction, Point
 from helper import plot
-
-# how many previous moves will be stored in memory_deque
-MAX_MEMORY = 100_000
-BATCH_SIZE = 1000
-LR = 0.001
-
-INPUT_SIZE = 11  # has to be the length of Agent.get_state
-HIDDEN_SIZE = 256
-OUTPUT_SIZE = 3  # has to be the number of possible actions, Agent.get_action
+from settings import *
 
 
 class Agent:
@@ -51,10 +43,10 @@ class Agent:
         head = game.snake[0]
 
         # get points around the head
-        point_left = Point(head.x - SnakeGameAI.BLOCK_SIZE, head.y)
-        point_right = Point(head.x + SnakeGameAI.BLOCK_SIZE, head.y)
-        point_up = Point(head.x, head.y - SnakeGameAI.BLOCK_SIZE)
-        point_down = Point(head.x, head.y + SnakeGameAI.BLOCK_SIZE)
+        point_left = Point(head.x - BLOCK_SIZE, head.y)
+        point_right = Point(head.x + BLOCK_SIZE, head.y)
+        point_up = Point(head.x, head.y - BLOCK_SIZE)
+        point_down = Point(head.x, head.y + BLOCK_SIZE)
 
         is_direction_right = game.direction == Direction.RIGHT
         is_direction_left = game.direction == Direction.LEFT

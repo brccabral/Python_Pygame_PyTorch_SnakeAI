@@ -1,6 +1,7 @@
 import pygame
 import random
 from collections import namedtuple
+from settings import *
 
 
 Point = namedtuple('Point', 'x, y')
@@ -33,25 +34,9 @@ class Direction:
 
 class SnakeGameAI:
 
-    # rgb colors
-    WHITE = (255, 255, 255)
-    RED = (200, 0, 0)
-    BLUE1 = (0, 0, 255)
-    BLUE2 = (0, 100, 255)
-    GREEN1 = (0, 255, 0)
-    GREEN2 = (0, 255, 100)
-    BLACK = (0, 0, 0)
-
-    BLOCK_SIZE = 20
-    BLOCK_DRAW_OFFSET = int(BLOCK_SIZE*0.2)
-    BLOCK_SIZE_OFFSET = int(BLOCK_SIZE*0.6)
-
-    GAME_WIDTH = 800
-    GAME_HEIGHT = 480
-
     def __init__(self):
-        self.w = SnakeGameAI.GAME_WIDTH
-        self.h = SnakeGameAI.GAME_HEIGHT
+        self.w = GAME_WIDTH
+        self.h = GAME_HEIGHT
         # init display
         self.display = pygame.Surface((self.w, self.h))
         self.font = pygame.font.Font('arial.ttf', 25)
@@ -59,10 +44,10 @@ class SnakeGameAI:
         self.reset()
 
     def _place_food(self):
-        x = random.randint(0, (self.w-SnakeGameAI.BLOCK_SIZE) //
-                           SnakeGameAI.BLOCK_SIZE)*SnakeGameAI.BLOCK_SIZE
-        y = random.randint(0, (self.h-SnakeGameAI.BLOCK_SIZE) //
-                           SnakeGameAI.BLOCK_SIZE)*SnakeGameAI.BLOCK_SIZE
+        x = random.randint(0, (self.w-BLOCK_SIZE) //
+                           BLOCK_SIZE)*BLOCK_SIZE
+        y = random.randint(0, (self.h-BLOCK_SIZE) //
+                           BLOCK_SIZE)*BLOCK_SIZE
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
@@ -108,7 +93,7 @@ class SnakeGameAI:
             pt = self.head
 
         # hits boundary
-        if pt.x > self.w - SnakeGameAI.BLOCK_SIZE or pt.x < 0 or pt.y > self.h - SnakeGameAI.BLOCK_SIZE or pt.y < 0:
+        if pt.x > self.w - BLOCK_SIZE or pt.x < 0 or pt.y > self.h - BLOCK_SIZE or pt.y < 0:
             return True
         # hits itself
         if pt in self.snake[1:]:
@@ -117,23 +102,23 @@ class SnakeGameAI:
         return False
 
     def _update_ui(self):
-        self.display.fill(SnakeGameAI.BLACK)
+        self.display.fill(BLACK)
 
-        pygame.draw.rect(self.display, SnakeGameAI.GREEN1, pygame.Rect(
-            self.head.x, self.head.y, SnakeGameAI.BLOCK_SIZE, SnakeGameAI.BLOCK_SIZE))
-        pygame.draw.rect(self.display, SnakeGameAI.GREEN2,
-                         pygame.Rect(self.head.x+SnakeGameAI.BLOCK_DRAW_OFFSET, self.head.y+SnakeGameAI.BLOCK_DRAW_OFFSET, SnakeGameAI.BLOCK_SIZE_OFFSET, SnakeGameAI.BLOCK_SIZE_OFFSET))
+        pygame.draw.rect(self.display, GREEN1, pygame.Rect(
+            self.head.x, self.head.y, BLOCK_SIZE, BLOCK_SIZE))
+        pygame.draw.rect(self.display, GREEN2,
+                         pygame.Rect(self.head.x+BLOCK_DRAW_OFFSET, self.head.y+BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, BLOCK_SIZE_OFFSET))
         for pt in self.snake[1:]:
-            pygame.draw.rect(self.display, SnakeGameAI.BLUE1, pygame.Rect(
-                pt.x, pt.y, SnakeGameAI.BLOCK_SIZE, SnakeGameAI.BLOCK_SIZE))
-            pygame.draw.rect(self.display, SnakeGameAI.BLUE2,
-                             pygame.Rect(self.head.x+SnakeGameAI.BLOCK_DRAW_OFFSET, self.head.y+SnakeGameAI.BLOCK_DRAW_OFFSET, SnakeGameAI.BLOCK_SIZE_OFFSET, SnakeGameAI.BLOCK_SIZE_OFFSET))
+            pygame.draw.rect(self.display, BLUE1, pygame.Rect(
+                pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
+            pygame.draw.rect(self.display, BLUE2,
+                             pygame.Rect(self.head.x+BLOCK_DRAW_OFFSET, self.head.y+BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, BLOCK_SIZE_OFFSET))
 
-        pygame.draw.rect(self.display, SnakeGameAI.RED, pygame.Rect(
-            self.food.x, self.food.y, SnakeGameAI.BLOCK_SIZE, SnakeGameAI.BLOCK_SIZE))
+        pygame.draw.rect(self.display, RED, pygame.Rect(
+            self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
 
         text = self.font.render(
-            "Score: " + str(self.score), True, SnakeGameAI.WHITE)
+            "Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
         # pygame.display.update()
 
@@ -147,8 +132,8 @@ class SnakeGameAI:
 
         x = self.head.x
         y = self.head.y
-        x += self.direction.x*SnakeGameAI.BLOCK_SIZE
-        y += self.direction.y*SnakeGameAI.BLOCK_SIZE
+        x += self.direction.x*BLOCK_SIZE
+        y += self.direction.y*BLOCK_SIZE
 
         self.head = Point(x, y)
 
@@ -161,8 +146,8 @@ class SnakeGameAI:
 
         self.head = Point(self.w/2, self.h/2)
         self.snake = [self.head,
-                      Point(self.head.x-SnakeGameAI.BLOCK_SIZE, self.head.y),
-                      Point(self.head.x-(2*SnakeGameAI.BLOCK_SIZE), self.head.y)]
+                      Point(self.head.x-BLOCK_SIZE, self.head.y),
+                      Point(self.head.x-(2*BLOCK_SIZE), self.head.y)]
 
         self.score = 0
         self.food = None

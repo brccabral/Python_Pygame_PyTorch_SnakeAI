@@ -1,8 +1,8 @@
-import math
 import random
 import sys
 from typing import List
 import pygame
+from settings import *
 
 from snake_game import SnakeGameAI
 from agent import Agent
@@ -11,18 +11,10 @@ from genetic import GeneticStats, Individual
 pygame.init()
 
 
-SCREEN_WIDTH = 1280
-SCREEN_HEIGHT = 480
-CLOCK_SPEED = 10
-GAME_DISPLAY_PADDING = 2
-
-MAX_GENERATIONS = 100
-
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 pygame.display.set_caption('SnakeAI')
 clock = pygame.time.Clock()
 
-NUMBER_OF_AGENTS = 2
 population = [Individual(SnakeGameAI(), id=i, number_of_individuals=NUMBER_OF_AGENTS,
                          display_padding=GAME_DISPLAY_PADDING) for i in range(NUMBER_OF_AGENTS)]
 genetic_stats = GeneticStats(NUMBER_OF_AGENTS)
@@ -55,7 +47,7 @@ play_type = User_Play_Type()
 # play_type = Play_Type()
 
 while True:
-    screen.fill(SnakeGameAI.WHITE)
+    screen.fill(WHITE)
     action = [0, 0, 0, 0]
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
