@@ -24,7 +24,7 @@ CLOCK_SPEED = 10
 
 # genetic
 MAX_GENERATIONS = 100
-NUMBER_OF_AGENTS = 2
+NUMBER_OF_AGENTS = 16
 
 # agent training
 MAX_MEMORY = 100_000 # how many previous moves will be stored in memory_deque
