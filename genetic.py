@@ -242,11 +242,11 @@ class GeneticAlgo:
         new_population: List[Individual] = []
         for order in range(NUMBER_OF_AGENTS):
             new_population.append(
-                self.select_individual(population, pop_fitness, total_fitness))
+                self.select_individual(population, pop_fitness, total_fitness, order))
 
         # reset order
-        for order in range(len(new_population)):
-            new_population[order].set_order(order)
+        # for order in range(len(new_population)):
+        #     new_population[order].set_order(order)
 
         # if len(population) == 2:
         #     new_population.append(population[0])
@@ -268,11 +268,11 @@ class GeneticAlgo:
 
         return new_population
 
-    def select_individual(self, population: List[Individual], pop_fitness: List[float], total_fitness):
+    def select_individual(self, population: List[Individual], pop_fitness: List[float], total_fitness, order):
         pick_probability = random.random()
         select = 0
         while pick_probability >= 0:
             pick_probability -= pop_fitness[select]/total_fitness
             select += 1
         select -= 1
-        return population[select].copy(select)
+        return population[select].copy(order)
