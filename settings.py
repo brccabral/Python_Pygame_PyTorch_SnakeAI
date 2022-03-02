@@ -34,7 +34,7 @@ class Play_Type(Enum):
     USER = 2
     AI = 3
 
-PLAY_TYPE = Play_Type.USER
+PLAY_TYPE = Play_Type.AI
 
 # agent training
 MAX_MEMORY = 100_000 # how many previous moves will be stored in memory_deque

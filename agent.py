@@ -112,7 +112,7 @@ class Agent:
     def get_action(self, state):
         # random moves: tradeoff between exploration vs exploitation
         self.epsilon = 80 - self.number_of_games
-        action = [0, 0, 0]
+        action = [0 for _ in range(OUTPUT_SIZE)]
         # in the beginning this is true for some time, later self.number_of_games is larger
         # than 80 and this will never get called
         if random.randint(0, 200) < self.epsilon:

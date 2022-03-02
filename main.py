@@ -24,7 +24,7 @@ agent_play_type = User_Play_Type()
 
 while True:
     screen.fill(WHITE)
-    action = [0 for _ in range(OUTPUT_SIZE)]
+    user_event = None
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             pygame.quit()
@@ -34,15 +34,12 @@ while True:
                 pygame.quit()
                 sys.exit()
             if PLAY_TYPE == Play_Type.USER:
-                action = agent_play_type.get_action(event)
+                user_event = event
 
     total_game_over = 0
     for individual in population:
-        if PLAY_TYPE != Play_Type.USER:
-            action = individual.agent.get_action()
 
-        individual.reward, individual.game_over, individual.score = individual.game.play_step(
-            action)
+        individual.play_step(user_event)
         individual.update_fitness()
 
         if individual.game_over:

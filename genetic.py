@@ -1,3 +1,4 @@
+from abc import ABC, abstractclassmethod
 import math
 import random
 from typing import List
@@ -8,9 +9,18 @@ from settings import *
 from snake_game import SnakeGameAI
 
 
-class Agent_Play_Type():
+class Agent_Play_Type(ABC):
+    @abstractclassmethod
     def get_action(self):
         return [0 for _ in range(OUTPUT_SIZE)]
+
+    @abstractclassmethod
+    def train(self):
+        pass
+
+    @abstractclassmethod
+    def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
+        pass
 
 
 class Random_Play_Type(Agent_Play_Type):
@@ -20,6 +30,13 @@ class Random_Play_Type(Agent_Play_Type):
         action[random_action_index] = 1
         return action
 
+    def train(self):
+        pass
+
+    def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
+        action = self.get_action()
+        return game.play_step(action)
+
 
 class User_Play_Type(Agent_Play_Type):
     def get_action(self, event: pygame.event.Event = None):
@@ -28,6 +45,13 @@ class User_Play_Type(Agent_Play_Type):
                     event.key == pygame.K_RIGHT, event.key == pygame.K_DOWN]
         return [0 for _ in range(OUTPUT_SIZE)]
 
+    def train(self):
+        pass
+
+    def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
+        action = self.get_action(event)
+        return game.play_step(action)
+
 
 class AI_Play_Type(Agent_Play_Type):
     def __init__(self, agent: Agent):
@@ -35,6 +59,19 @@ class AI_Play_Type(Agent_Play_Type):
 
     def get_action(self, state: List = None):
         return self.agent.get_action(state)
+
+    def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
+        state_old = self.agent.get_state(game)
+        action = self.get_action(state_old)
+        reward, game_over, score = game.play_step(action)
+        self.train(game, state_old, action, reward, game_over)
+        return reward, game_over, score
+
+    def train(self, game, state_old, action, reward, game_over):
+        state_new = self.agent.get_state(game)
+        self.agent.train_short_memory(
+            state_old, action, reward, state_new, game_over)
+        self.agent.remember(state_old, action, reward, state_new, game_over)
 
 
 class Individual:
@@ -59,7 +96,9 @@ class Individual:
         if PLAY_TYPE == Play_Type.RANDOM:
             self.set_agent(Random_Play_Type())
         elif PLAY_TYPE == Play_Type.AI:
-            self.set_agent(AI_Play_Type())
+            self.set_agent(AI_Play_Type(Agent()))
+        elif PLAY_TYPE == Play_Type.USER:
+            self.set_agent(User_Play_Type())
 
     def set_order(self, order):
         self.order = order
@@ -94,13 +133,12 @@ class Individual:
     def set_agent(self, agent: Agent_Play_Type):
         self.agent = agent
 
+    def play_step(self, event=None):
+        self.reward, self.game_over, self.score = self.agent.play_step(
+            self.game, event)
+
     def __repr__(self):
         return f'Id {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
-
-
-class IndividualAI(object):
-    def __init__(self):
-        super().__init__()
 
 
 class GeneticStats:
@@ -148,7 +186,7 @@ class GeneticAlgo:
     def fitness(self, individual: Individual):
         return len(individual.game.snake)/self.total_board_size
 
-    def new_individual(self, order, play_type: Play_Type = Play_Type.RANDOM):
+    def new_individual(self, order):
         return Individual(SnakeGameAI(), order=order)
 
     def new_population(self, population: List[Individual] = None) -> List[Individual]:
