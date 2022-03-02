@@ -155,7 +155,9 @@ class Individual:
         self.fitness = pow(len(self.game.snake)/self.total_board_size, 2)
 
     def copy(self, order):
-        return Individual(SnakeGameAI(), order=order)
+        new_copy = Individual(SnakeGameAI(), order=order)
+        new_copy.play_type = self.play_type
+        return new_copy
 
     def cross_over(self, parent2, order):
         # TODO : create child from cross_over
@@ -176,7 +178,7 @@ class Individual:
             self.game, event)
 
     def __repr__(self):
-        return f'Id {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
+        return f'Order {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
 
 
 class GeneticStats:
@@ -234,27 +236,43 @@ class GeneticAlgo:
         population = sorted(
             population, key=lambda individual: individual.fitness, reverse=True)
 
-        # reset order
-        for order, individual in enumerate(population):
-            individual.set_order(order)
+        pop_fitness = [individual.fitness for individual in population]
+        total_fitness = sum(pop_fitness)
 
         new_population: List[Individual] = []
-        if len(population) == 2:
-            new_population.append(population[0])
-            new_population.append(self.new_individual(1))
-        elif len(population) <= 4:
-            new_population.append(population[0])
-            new_population.append(population[1].mutate(1))
-            for order in range(2, len(population)):
-                new_population.append(self.new_individual(order))
-        else:
-            p1, p2 = population[0], population[1]
-            new_population.append(p1)
-            new_population.append(p1.cross_over(p2, 1))
-            new_population.append(p2.cross_over(p1, 2))
-            for order, individual in enumerate(population[3:len(population)//2]):
-                new_population.append(individual.mutate(order + 3))
-            for order in range(len(population)//2, len(population)):
-                new_population.append(self.new_individual(order))
+        for order in range(NUMBER_OF_AGENTS):
+            new_population.append(
+                self.select_individual(population, pop_fitness, total_fitness))
+
+        # reset order
+        for order in range(len(new_population)):
+            new_population[order].set_order(order)
+
+        # if len(population) == 2:
+        #     new_population.append(population[0])
+        #     new_population.append(self.new_individual(1))
+        # elif len(population) <= 4:
+        #     new_population.append(population[0])
+        #     new_population.append(population[1].mutate(1))
+        #     for order in range(2, len(population)):
+        #         new_population.append(self.new_individual(order))
+        # else:
+        #     p1, p2 = population[0], population[1]
+        #     new_population.append(p1)
+        #     new_population.append(p1.cross_over(p2, 1))
+        #     new_population.append(p2.cross_over(p1, 2))
+        #     for order, individual in enumerate(population[3:len(population)//2]):
+        #         new_population.append(individual.mutate(order + 3))
+        #     for order in range(len(population)//2, len(population)):
+        #         new_population.append(self.new_individual(order))
 
         return new_population
+
+    def select_individual(self, population: List[Individual], pop_fitness: List[float], total_fitness):
+        pick_probability = random.random()
+        select = 0
+        while pick_probability >= 0:
+            pick_probability -= pop_fitness[select]/total_fitness
+            select += 1
+        select -= 1
+        return population[select].copy(select)

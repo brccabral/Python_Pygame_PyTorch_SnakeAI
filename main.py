@@ -89,6 +89,7 @@ while True:
 
 # TODO : save winner
 
-print(f'best_score_all_time {genetic_stats.best_score_all_time} generation_count {genetic_stats.generation_count}')
+print(
+    f'best_score_all_time {genetic_stats.best_score_all_time} generation_count {genetic_stats.generation_count}')
 
 pygame.quit()
