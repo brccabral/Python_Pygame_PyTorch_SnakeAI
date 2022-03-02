@@ -40,6 +40,6 @@ PLAY_TYPE = Play_Type.AI
 MAX_MEMORY = 100_000 # how many previous moves will be stored in memory_deque
 BATCH_SIZE = 1000
 LR = 0.001
-INPUT_SIZE = 11  # has to be the length of Agent.get_state
+INPUT_SIZE = 10  # has to be the length of Agent.get_state
 HIDDEN_SIZE = 256
 OUTPUT_SIZE = 4  # has to be the number of possible actions, Agent.get_action

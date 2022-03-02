@@ -3,7 +3,7 @@ import random
 import numpy as np
 from collections import deque
 from model import Linear_QNet, QTrainer
-from snake_game import SnakeGameAI, Direction, Point
+from snake_game import SnakeGameAI, Point
 from helper import plot
 from settings import *
 
@@ -22,17 +22,16 @@ class Agent:
 
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
-        0: If there is any danger Straight,
-        1: If there is any danger Right,
-        2: If there is any danger Left
-        3: If current direction is left
-        4: If current direction is right
-        5: If current direction is up
-        6: If current direction is down
-        7: Is food on the left
-        8: Is food on the right
-        9: Is food up
-        10: Is food down
+        0: If there is any danger Right,
+        1: If there is any danger Left,
+        2: If there is any danger Up
+        3: If there is any danger Down,
+        4: Head row is even or odd
+        5: Head column is even or odd
+        6: Is food on the left
+        7: Is food on the right
+        8: Is food up
+        9: Is food down
 
         Args:
             game (SnakeGameAI): the game
@@ -48,35 +47,14 @@ class Agent:
         point_up = Point(head.x, head.y - BLOCK_SIZE)
         point_down = Point(head.x, head.y + BLOCK_SIZE)
 
-        is_direction_right = game.direction == Direction.RIGHT
-        is_direction_left = game.direction == Direction.LEFT
-        is_direction_up = game.direction == Direction.UP
-        is_direction_down = game.direction == Direction.DOWN
-
         state = [
-            # Danger straight (same direction)
-            (is_direction_right and game.is_collision(point_right)) or
-            (is_direction_left and game.is_collision(point_left)) or
-            (is_direction_up and game.is_collision(point_up)) or
-            (is_direction_down and game.is_collision(point_down)),
+            game.is_collision(point_right),
+            game.is_collision(point_left),
+            game.is_collision(point_up),
+            game.is_collision(point_down),
 
-            # Danger right (danger is at the right of current direction)
-            (is_direction_right and game.is_collision(point_down)) or
-            (is_direction_left and game.is_collision(point_up)) or
-            (is_direction_up and game.is_collision(point_right)) or
-            (is_direction_down and game.is_collision(point_left)),
-
-            # Danger left (danger is at the left of current direction)
-            (is_direction_right and game.is_collision(point_up)) or
-            (is_direction_left and game.is_collision(point_down)) or
-            (is_direction_up and game.is_collision(point_left)) or
-            (is_direction_down and game.is_collision(point_right)),
-
-            # current direction
-            is_direction_right,
-            is_direction_left,
-            is_direction_up,
-            is_direction_down,
+            head.x % 2,
+            head.y % 2,
 
             # food location
             game.food.x < head.x,  # food left
