@@ -131,7 +131,7 @@ class Agent:
 
     def get_play(self, state):
         self.model.eval()
-        action = [0, 0, 0]
+        action = [0 for _ in range(OUTPUT_SIZE)]
         state0 = torch.tensor(state, dtype=torch.float)
         prediction = self.model.forward(state0)
         move = torch.argmax(prediction).item()

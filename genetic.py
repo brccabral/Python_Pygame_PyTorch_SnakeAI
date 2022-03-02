@@ -1,5 +1,6 @@
 from abc import ABC, abstractclassmethod
 import math
+from os import chdir
 import random
 from typing import List
 import pygame
@@ -22,6 +23,10 @@ class Agent_Play_Type(ABC):
     def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
         pass
 
+    @abstractclassmethod
+    def cross_over(self, parent2):
+        pass
+
 
 class Random_Play_Type(Agent_Play_Type):
     def get_action(self):
@@ -37,6 +42,9 @@ class Random_Play_Type(Agent_Play_Type):
         action = self.get_action()
         return game.play_step(action)
 
+    def cross_over(self, parent2):
+        return self
+
 
 class User_Play_Type(Agent_Play_Type):
     def get_action(self, event: pygame.event.Event = None):
@@ -51,6 +59,9 @@ class User_Play_Type(Agent_Play_Type):
     def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
         action = self.get_action(event)
         return game.play_step(action)
+
+    def cross_over(self, parent2):
+        return self
 
 
 class AI_Play_Type(Agent_Play_Type):
@@ -73,6 +84,31 @@ class AI_Play_Type(Agent_Play_Type):
             state_old, action, reward, state_new, game_over)
         self.agent.remember(state_old, action, reward, state_new, game_over)
 
+    def cross_over(self, parent2):
+        self_state_dict = self.agent.model.state_dict()
+        p2_state_dict = parent2.play_type.agent.model.state_dict()
+
+        cross1 = random.randint(
+            1, self_state_dict['linear1.weight'].shape[1] - 1)
+        cross2 = random.randint(
+            1, self_state_dict['linear2.weight'].shape[1] - 1)
+
+        child_state_dict = self_state_dict
+        child_state_dict['linear1.weight'][:,
+                                           cross1:] = p2_state_dict['linear1.weight'][:, cross1:]
+        child_state_dict['linear1.bias'][cross1:] = p2_state_dict['linear1.bias'][cross1:]
+        child_state_dict['linear2.weight'][:,
+                                           cross2:] = p2_state_dict['linear2.weight'][:, cross2:]
+        child_state_dict['linear2.bias'][cross2:] = p2_state_dict['linear2.bias'][cross2:]
+
+        child = AI_Play_Type(Agent())
+        child.agent.model.load_state_dict(child_state_dict)
+        child.agent.epsilon = self.agent.epsilon
+        child.agent.number_of_games = self.agent.number_of_games
+        child.agent.memory_deque = self.agent.memory_deque
+        
+        return child
+
 
 class Individual:
     def __init__(self, game: SnakeGameAI, order):
@@ -94,11 +130,11 @@ class Individual:
         self.total_board_size = length_x*length_y
 
         if PLAY_TYPE == Play_Type.RANDOM:
-            self.set_agent(Random_Play_Type())
+            self.set_play_type(Random_Play_Type())
         elif PLAY_TYPE == Play_Type.AI:
-            self.set_agent(AI_Play_Type(Agent()))
+            self.set_play_type(AI_Play_Type(Agent()))
         elif PLAY_TYPE == Play_Type.USER:
-            self.set_agent(User_Play_Type())
+            self.set_play_type(User_Play_Type())
 
     def set_order(self, order):
         self.order = order
@@ -123,18 +159,20 @@ class Individual:
 
     def cross_over(self, parent2, order):
         # TODO : create child from cross_over
+        # print(f'cross {order}')
         child = Individual(SnakeGameAI(), order)
+        child.play_type = self.play_type.cross_over(parent2)
         return child
 
     def mutate(self, order):
         # TODO
         return Individual(SnakeGameAI(), order)
 
-    def set_agent(self, agent: Agent_Play_Type):
-        self.agent = agent
+    def set_play_type(self, play_type: Agent_Play_Type):
+        self.play_type = play_type
 
     def play_step(self, event=None):
-        self.reward, self.game_over, self.score = self.agent.play_step(
+        self.reward, self.game_over, self.score = self.play_type.play_step(
             self.game, event)
 
     def __repr__(self):
@@ -192,6 +230,8 @@ class GeneticAlgo:
     def new_population(self, population: List[Individual] = None) -> List[Individual]:
         if population is None:
             return self.generate_population()
+        if len(population) == 1:
+            return population
 
         # sort based on fitness
         population = sorted(
@@ -202,9 +242,7 @@ class GeneticAlgo:
             individual.set_order(order)
 
         new_population: List[Individual] = []
-        if len(population) == 1:
-            return population
-        elif len(population) == 2:
+        if len(population) == 2:
             new_population.append(population[0])
             new_population.append(self.new_individual(1))
         elif len(population) <= 4:
