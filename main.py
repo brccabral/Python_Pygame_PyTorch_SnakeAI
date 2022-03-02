@@ -40,6 +40,8 @@ while True:
 
         if individual.game_over:
             total_game_over += 1
+        elif best_individual_generation.game_over:
+            best_individual_generation = individual
 
         if individual.score > genetic_stats.best_score_all_time:
             genetic_stats.best_score_all_time = individual.score

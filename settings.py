@@ -29,15 +29,17 @@ CLOCK_SPEED = 40
 MAX_GENERATIONS = 100_000
 NUMBER_OF_AGENTS = 16
 
+
 class Play_Type(Enum):
     RANDOM = 1
     USER = 2
     AI = 3
 
+
 PLAY_TYPE = Play_Type.AI
 
 # agent training
-MAX_MEMORY = 100_000 # how many previous moves will be stored in memory_deque
+MAX_MEMORY = 100_000  # how many previous moves will be stored in memory_deque
 BATCH_SIZE = 1000
 LR = 0.001
 INPUT_SIZE = 10  # has to be the length of Agent.get_state
