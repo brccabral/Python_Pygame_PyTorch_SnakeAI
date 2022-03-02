@@ -287,8 +287,8 @@ class GeneticAlgo:
         pop_fitness = [individual.fitness for individual in population]
         total_fitness = sum(pop_fitness)
 
-        new_population: List[Individual] = []
-        for order in range(NUMBER_OF_AGENTS):
+        new_population: List[Individual] = [population[0]]
+        for order in range(1, NUMBER_OF_AGENTS):
             parent1 = self.select_individual(
                 population, pop_fitness, total_fitness, order)
             parent2 = self.select_individual(
