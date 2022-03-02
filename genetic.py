@@ -121,6 +121,7 @@ class Individual:
         self.screen_h = GAME_HEIGHT
         self.display_padding = GAME_DISPLAY_PADDING
         self.order = order
+        self.square = math.ceil(math.sqrt(min(self.number_of_individuals, 15)))
         self.set_display()
         self.fitness = 0
 
@@ -141,11 +142,10 @@ class Individual:
         self.set_display()
 
     def set_display(self):
-        square = math.ceil(math.sqrt(self.number_of_individuals))
-        game_column = self.order % square
-        game_row = self.order // square
-        self.game_w = self.screen_w // square - self.display_padding
-        self.game_h = self.screen_h // square - self.display_padding
+        game_column = self.order % self.square
+        game_row = self.order // self.square
+        self.game_w = self.screen_w // self.square - self.display_padding
+        self.game_h = self.screen_h // self.square - self.display_padding
         self.game_x = game_column * \
             (self.game_w + self.display_padding) + self.display_padding
         self.game_y = game_row * (self.game_h + self.display_padding) + \

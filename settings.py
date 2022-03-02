@@ -27,7 +27,7 @@ CLOCK_SPEED = 40
 
 # genetic
 MAX_GENERATIONS = 100_000
-NUMBER_OF_AGENTS = 16
+NUMBER_OF_AGENTS = 30
 
 
 class Play_Type(Enum):

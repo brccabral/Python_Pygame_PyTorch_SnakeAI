@@ -60,6 +60,7 @@ while True:
         screen.blit(pygame.transform.scale(genetic_stats.display,
                     (genetic_stats.w, genetic_stats.h)), (SCREEN_WIDTH - 450, 0))
 
+        best_individual_generation.game.update_ui()
         screen.blit(pygame.transform.scale(best_individual_generation.game.display,
                     (400, 240)), (SCREEN_WIDTH - 450, 200))
 
