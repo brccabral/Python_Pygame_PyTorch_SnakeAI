@@ -106,7 +106,7 @@ class AI_Play_Type(Agent_Play_Type):
         child.agent.epsilon = self.agent.epsilon
         child.agent.number_of_games = self.agent.number_of_games
         child.agent.memory_deque = self.agent.memory_deque
-        
+
         return child
 
 
@@ -152,7 +152,7 @@ class Individual:
             self.display_padding
 
     def update_fitness(self):
-        self.fitness = len(self.game.snake)/self.total_board_size
+        self.fitness = pow(len(self.game.snake)/self.total_board_size, 2)
 
     def copy(self, order):
         return Individual(SnakeGameAI(), order=order)
@@ -220,9 +220,6 @@ class GeneticAlgo:
 
     def generate_population(self):
         return [self.new_individual(i) for i in range(self.population_size)]
-
-    def fitness(self, individual: Individual):
-        return len(individual.game.snake)/self.total_board_size
 
     def new_individual(self, order):
         return Individual(SnakeGameAI(), order=order)
