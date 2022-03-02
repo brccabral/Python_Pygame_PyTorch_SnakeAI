@@ -241,8 +241,9 @@ class GeneticAlgo:
 
         new_population: List[Individual] = []
         for order in range(NUMBER_OF_AGENTS):
-            new_population.append(
-                self.select_individual(population, pop_fitness, total_fitness, order))
+            parent1 = self.select_individual(population, pop_fitness, total_fitness, order)
+            parent2 = self.select_individual(population, pop_fitness, total_fitness, order)
+            new_population.append(parent1.cross_over(parent2, order))
 
         # reset order
         # for order in range(len(new_population)):
