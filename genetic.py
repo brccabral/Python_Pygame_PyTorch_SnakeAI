@@ -1,6 +1,6 @@
 from abc import ABC, abstractclassmethod
 import math
-from os import chdir
+import torch
 import random
 from typing import List
 import pygame
@@ -27,6 +27,10 @@ class Agent_Play_Type(ABC):
     def cross_over(self, parent2):
         pass
 
+    @abstractclassmethod
+    def mutate(self):
+        pass
+
 
 class Random_Play_Type(Agent_Play_Type):
     def get_action(self):
@@ -45,6 +49,9 @@ class Random_Play_Type(Agent_Play_Type):
     def cross_over(self, parent2):
         return self
 
+    def mutate(self):
+        pass
+
 
 class User_Play_Type(Agent_Play_Type):
     def get_action(self, event: pygame.event.Event = None):
@@ -62,6 +69,9 @@ class User_Play_Type(Agent_Play_Type):
 
     def cross_over(self, parent2):
         return self
+
+    def mutate(self):
+        pass
 
 
 class AI_Play_Type(Agent_Play_Type):
@@ -108,6 +118,47 @@ class AI_Play_Type(Agent_Play_Type):
         child.agent.memory_deque = self.agent.memory_deque
 
         return child
+
+    def mutate(self):
+        self_state_dict = self.agent.model.state_dict()
+
+        linear1_rows, linear1_columns = self_state_dict['linear1.weight'].shape
+        linear1_weights_probabilities = torch.tensor(
+            [[random.uniform(0, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
+        linear1_new_weights = torch.tensor(
+            [[random.uniform(-1, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
+        linear1_new_weights = linear1_new_weights * \
+            self_state_dict['linear1.weight']
+        self_state_dict['linear1.weight'] = self_state_dict['linear1.weight'].where(
+            linear1_weights_probabilities > MUTATION_PROBABILITY, linear1_new_weights)
+
+        linear1_bias_probabilities = torch.tensor(
+            [random.uniform(0, 1) for _ in range(linear1_rows)])
+        linear1_new_bias = torch.tensor(
+            [random.uniform(-1, 1) for _ in range(linear1_rows)])
+        linear1_new_bias = linear1_new_bias * self_state_dict['linear1.bias']
+        self_state_dict['linear1.bias'] = self_state_dict['linear1.bias'].where(
+            linear1_bias_probabilities > MUTATION_PROBABILITY, linear1_new_bias)
+
+        linear2_rows, linear2_columns = self_state_dict['linear2.weight'].shape
+        linear2_weights_probabilities = torch.tensor(
+            [[random.uniform(0, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
+        linear2_new_weights = torch.tensor(
+            [[random.uniform(-1, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
+        linear2_new_weights = linear2_new_weights * \
+            self_state_dict['linear2.weight']
+        self_state_dict['linear2.weight'] = self_state_dict['linear2.weight'].where(
+            linear2_weights_probabilities > MUTATION_PROBABILITY, linear2_new_weights)
+
+        linear2_bias_probabilities = torch.tensor(
+            [random.uniform(0, 1) for _ in range(linear2_rows)])
+        linear2_new_bias = torch.tensor(
+            [random.uniform(-1, 1) for _ in range(linear2_rows)])
+        linear2_new_bias = linear2_new_bias * self_state_dict['linear2.bias']
+        self_state_dict['linear2.bias'] = self_state_dict['linear2.bias'].where(
+            linear2_bias_probabilities > MUTATION_PROBABILITY, linear2_new_bias)
+
+        self.agent.model.load_state_dict(self_state_dict)
 
 
 class Individual:
@@ -160,15 +211,12 @@ class Individual:
         return new_copy
 
     def cross_over(self, parent2, order):
-        # TODO : create child from cross_over
-        # print(f'cross {order}')
-        child = Individual(SnakeGameAI(), order)
+        child = self.copy(order)
         child.play_type = self.play_type.cross_over(parent2)
         return child
 
-    def mutate(self, order):
-        # TODO
-        return Individual(SnakeGameAI(), order)
+    def mutate(self):
+        self.play_type.mutate()
 
     def set_play_type(self, play_type: Agent_Play_Type):
         self.play_type = play_type
@@ -245,7 +293,9 @@ class GeneticAlgo:
                 population, pop_fitness, total_fitness, order)
             parent2 = self.select_individual(
                 population, pop_fitness, total_fitness, order)
-            new_population.append(parent1.cross_over(parent2, order))
+            child = parent1.cross_over(parent2, order)
+            child.mutate()
+            new_population.append(child)
 
         # reset order
         # for order in range(len(new_population)):
