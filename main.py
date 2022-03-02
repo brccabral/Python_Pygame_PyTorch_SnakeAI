@@ -79,6 +79,7 @@ while True:
         genetic_stats.generation_count += 1
         for individual in population:
             individual.game.reset()
+            individual.play_type.agent.number_of_games += 1
 
         population = genetic_algo.new_population(population)
         best_individual_generation = population[0]
