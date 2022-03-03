@@ -1,3 +1,4 @@
+import datetime
 import sys
 import pygame
 from settings import *
@@ -69,12 +70,14 @@ while True:
 
     # all games have ended, generation is done
     if total_game_over == len(population):
-        print(f'Generation {genetic_stats.generation_count} Best All {genetic_stats.best_score_all_time} Best Gen {genetic_stats.best_score_generation}')
-        
+        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_stats.generation_count} Best All {genetic_stats.best_score_all_time} Best Gen {genetic_stats.best_score_generation}')
+
         population = sorted(
             population, key=lambda individual: individual.fitness, reverse=True)
         if population[0].fitness >= 1:
             winner = population[0]
+            winner.play_type.agent.model.save(
+                file_name=f'model_winner_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
             print(
                 f'Generation {genetic_stats.generation_count} has a winner ID {population[0].order}')
             break
@@ -92,14 +95,11 @@ while True:
         population = genetic_algo.new_population(population)
         individual_highlight = population[0]
         genetic_stats.best_individual = individual_highlight.order
-        
 
     if DISPLAY_GUI:
         pygame.display.update()
         clock.tick(CLOCK_SPEED)
 
-
-# TODO : save winner
 
 print(
     f'best_score_all_time {genetic_stats.best_score_all_time} generation_count {genetic_stats.generation_count}')

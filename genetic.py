@@ -11,6 +11,9 @@ from snake_game import SnakeGameAI
 
 
 class Agent_Play_Type(ABC):
+    def __init__(self):
+        self.agent: Agent = None
+
     @abstractclassmethod
     def get_action(self):
         return [0 for _ in range(OUTPUT_SIZE)]
@@ -33,6 +36,9 @@ class Agent_Play_Type(ABC):
 
 
 class Random_Play_Type(Agent_Play_Type):
+    def __init__(self):
+        self.agent: Agent = None
+
     def get_action(self):
         action = [0 for _ in range(OUTPUT_SIZE)]
         random_action_index = random.randint(0, 3)
@@ -54,6 +60,9 @@ class Random_Play_Type(Agent_Play_Type):
 
 
 class User_Play_Type(Agent_Play_Type):
+    def __init__(self):
+        self.agent: Agent = None
+
     def get_action(self, event: pygame.event.Event = None):
         if event is not None:
             return [event.key == pygame.K_LEFT, event.key == pygame.K_UP,
