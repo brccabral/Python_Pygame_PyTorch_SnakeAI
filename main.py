@@ -1,9 +1,11 @@
 import datetime
 import sys
+from typing import List
 import pygame
 from settings import *
 
 from genetic import GeneticAlgo, GeneticStats, Individual
+from helper import plot_genetic
 
 pygame.init()
 if DISPLAY_GUI:
@@ -20,6 +22,8 @@ individual_highlight: Individual = population[0]
 individual_save: Individual = None
 
 user_event = None
+best_all_times: List[int] = []
+best_generation: List[int] = []
 
 while True:
     if DISPLAY_GUI:
@@ -73,6 +77,9 @@ while True:
     # all games have ended, generation is done
     if total_game_over == len(population):
         print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_stats.generation_count} Best All {genetic_stats.best_score_all_time} Best Gen {genetic_stats.best_score_generation}')
+        best_all_times.append(genetic_stats.best_score_all_time)
+        best_generation.append(genetic_stats.best_score_generation)
+        plot_genetic(best_all_times, best_generation)
 
         if individual_save is not None:
             individual_save.play_type.agent.model.save(
