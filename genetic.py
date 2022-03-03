@@ -135,7 +135,7 @@ class AI_Play_Type(Agent_Play_Type):
         linear1_weights_probabilities = torch.tensor(
             [[random.uniform(0, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
         linear1_new_weights = torch.tensor(
-            [[random.uniform(1-MUTATION_PROBABILITY, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
+            [[random.uniform(1-MUTATION_RATE, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
         linear1_new_weights = linear1_new_weights * \
             self_state_dict['linear1.weight']
         self_state_dict['linear1.weight'] = self_state_dict['linear1.weight'].where(
@@ -144,7 +144,7 @@ class AI_Play_Type(Agent_Play_Type):
         linear1_bias_probabilities = torch.tensor(
             [random.uniform(0, 1) for _ in range(linear1_rows)])
         linear1_new_bias = torch.tensor(
-            [random.uniform(1-MUTATION_PROBABILITY, 1) for _ in range(linear1_rows)])
+            [random.uniform(1-MUTATION_RATE, 1) for _ in range(linear1_rows)])
         linear1_new_bias = linear1_new_bias * self_state_dict['linear1.bias']
         self_state_dict['linear1.bias'] = self_state_dict['linear1.bias'].where(
             linear1_bias_probabilities > MUTATION_PROBABILITY, linear1_new_bias)
@@ -153,7 +153,7 @@ class AI_Play_Type(Agent_Play_Type):
         linear2_weights_probabilities = torch.tensor(
             [[random.uniform(0, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
         linear2_new_weights = torch.tensor(
-            [[random.uniform(1-MUTATION_PROBABILITY, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
+            [[random.uniform(1-MUTATION_RATE, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
         linear2_new_weights = linear2_new_weights * \
             self_state_dict['linear2.weight']
         self_state_dict['linear2.weight'] = self_state_dict['linear2.weight'].where(
@@ -162,7 +162,7 @@ class AI_Play_Type(Agent_Play_Type):
         linear2_bias_probabilities = torch.tensor(
             [random.uniform(0, 1) for _ in range(linear2_rows)])
         linear2_new_bias = torch.tensor(
-            [random.uniform(1-MUTATION_PROBABILITY, 1) for _ in range(linear2_rows)])
+            [random.uniform(1-MUTATION_RATE, 1) for _ in range(linear2_rows)])
         linear2_new_bias = linear2_new_bias * self_state_dict['linear2.bias']
         self_state_dict['linear2.bias'] = self_state_dict['linear2.bias'].where(
             linear2_bias_probabilities > MUTATION_PROBABILITY, linear2_new_bias)
@@ -289,14 +289,14 @@ class GeneticAlgo:
         if len(population) == 1:
             return population
 
-        # sort based on fitness
-        population = sorted(
-            population, key=lambda individual: individual.fitness, reverse=True)
+        # sort based on fitness (main script sorts it)
+        # population = sorted(
+        #     population, key=lambda individual: individual.fitness, reverse=True)
 
-        # return self.evolution(population)
-        return self.natural_selection(population)
+        return self.evolution(population)
+        # return self.natural_selection(population)
 
-    def natural_selection(self, population):
+    def natural_selection(self, population: List[Individual]):
         pop_fitness = [individual.fitness for individual in population]
         total_fitness = sum(pop_fitness)
 
@@ -309,7 +309,7 @@ class GeneticAlgo:
 
         return new_population
 
-    def evolution(self, population):
+    def evolution(self, population: List[Individual]):
         pop_fitness = [individual.fitness for individual in population]
         total_fitness = sum(pop_fitness)
 
