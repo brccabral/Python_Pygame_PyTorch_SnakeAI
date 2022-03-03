@@ -17,6 +17,7 @@ genetic_algo = GeneticAlgo()
 population = genetic_algo.new_population()
 genetic_stats = GeneticStats(NUMBER_OF_AGENTS)
 individual_highlight: Individual = population[0]
+individual_save: Individual = None
 
 user_event = None
 
@@ -48,8 +49,7 @@ while True:
 
         if individual.score > genetic_stats.best_score_all_time:
             genetic_stats.best_score_all_time = individual.score
-            individual.play_type.agent.model.save(
-                file_name=f'model_{individual.score}_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
+            individual_save = individual
 
         if individual.score > genetic_stats.best_score_generation:
             individual_highlight = individual
@@ -73,6 +73,11 @@ while True:
     # all games have ended, generation is done
     if total_game_over == len(population):
         print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_stats.generation_count} Best All {genetic_stats.best_score_all_time} Best Gen {genetic_stats.best_score_generation}')
+
+        if individual_save is not None:
+            individual_save.play_type.agent.model.save(
+                file_name=f'model_{individual_save.score}_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
+            individual_save = None
 
         population = sorted(
             population, key=lambda individual: individual.fitness, reverse=True)
