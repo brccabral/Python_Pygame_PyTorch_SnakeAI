@@ -234,6 +234,11 @@ class Individual:
         self.reward, self.game_over, self.score = self.play_type.play_step(
             self.game, event)
 
+    def reset(self):
+        self.score = 0
+        self.game.reset()
+        self.play_type.agent.number_of_games += 1
+
     def __repr__(self):
         return f'Order {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
 

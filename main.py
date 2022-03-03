@@ -43,13 +43,13 @@ while True:
     total_game_over = 0
     for individual in population:
 
-        individual.play_step(user_event)
-        individual.update_fitness()
-
         if individual.game_over:
             total_game_over += 1
-        elif individual_highlight.game_over:
-            individual_highlight = individual
+        else:
+            if individual_highlight.game_over:
+                individual_highlight = individual
+            individual.play_step(user_event)
+            individual.update_fitness()
 
         if individual.score > genetic_stats.best_score_all_time:
             genetic_stats.best_score_all_time = individual.score
@@ -104,8 +104,7 @@ while True:
         genetic_stats.best_score_generation = 0
         genetic_stats.generation_count += 1
         for individual in population:
-            individual.game.reset()
-            individual.play_type.agent.number_of_games += 1
+            individual.reset()
 
         population = genetic_algo.new_population(population)
         individual_highlight = population[0]
