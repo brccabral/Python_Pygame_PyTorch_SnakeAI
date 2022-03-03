@@ -80,7 +80,8 @@ while True:
         best_all_times.append(genetic_stats.best_score_all_time)
         best_generation.append(genetic_stats.best_score_generation)
         # with timer('Plot'):
-        plot_genetic(best_all_times, best_generation)
+        if PLOT_CHART:
+            plot_genetic(best_all_times, best_generation)
 
         if individual_save is not None:
             individual_save.play_type.agent.model.save(
