@@ -48,6 +48,8 @@ while True:
 
         if individual.score > genetic_stats.best_score_all_time:
             genetic_stats.best_score_all_time = individual.score
+            individual.play_type.agent.model.save(
+                file_name=f'model_{individual.score}_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
 
         if individual.score > genetic_stats.best_score_generation:
             individual_highlight = individual
