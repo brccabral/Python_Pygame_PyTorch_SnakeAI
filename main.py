@@ -88,7 +88,7 @@ while True:
 
         population = sorted(
             population, key=lambda individual: individual.fitness, reverse=True)
-        if population[0].fitness >= pow(population[0].total_board_size, 2):
+        if population[0].fitness >= FITNESS_TARGET:
             winner = population[0]
             winner.play_type.agent.model.save(
                 file_name=f'model_winner_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
