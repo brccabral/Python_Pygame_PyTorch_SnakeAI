@@ -1,7 +1,6 @@
 # rgb colors
 from enum import Enum
 
-
 # game settings
 BLOCK_SIZE = 20
 BLOCK_DRAW_OFFSET = int(BLOCK_SIZE*0.2)
@@ -23,7 +22,7 @@ GAME_HEIGHT = GAME_TABLE_ROWS * BLOCK_SIZE
 GAME_DISPLAY_PADDING = 2
 
 # main display
-DISPLAY_GUI = True
+DISPLAY_GUI = False
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 480
 CLOCK_SPEED = 120
@@ -48,6 +47,6 @@ PLAY_TYPE = Play_Type.AI
 MAX_MEMORY = 100_000  # how many previous moves will be stored in memory_deque
 BATCH_SIZE = 1000
 LR = 0.001
-INPUT_SIZE = 31  # has to be the length of Agent.get_state
+INPUT_SIZE = 30  # has to be the length of Agent.get_state
 HIDDEN_SIZE = 256
 OUTPUT_SIZE = 4  # has to be the number of possible actions, Agent.get_action

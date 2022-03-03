@@ -52,7 +52,7 @@ class SnakeGameAI:
         """receives an action from the agent and updates the game
 
         Args:
-            action (list): list of integers that will determine where to move the snake. [straight, right, left]
+            action (list): list of integers that will determine where to move the snake. [left, up, right, down]
 
         Returns:
             tuple: reward, game_over, score
@@ -63,7 +63,6 @@ class SnakeGameAI:
 
             # 2. move
             self._move(action)  # update the head
-            self.snake.insert(0, self.head)
 
             # 3. check if game over
             if self.is_collision() or self.frame_iteration > 100*len(self.snake):
@@ -90,7 +89,7 @@ class SnakeGameAI:
         if pt.x > GAME_TABLE_COLUMNS-1 or pt.x < 0 or pt.y > GAME_TABLE_ROWS-1 or pt.y < 0:
             return True
         # hits itself
-        if pt in self.snake:
+        if pt in self.snake[1:]:
             return True
 
         return False
@@ -120,11 +119,13 @@ class SnakeGameAI:
         """move snake head to new position
 
         Args:
-            action (list): list of integers that will determine where to move the snake. [straight, right, left]
+            action (list): list of integers that will determine where to move the snake. [left, up, right, down]
         """
         self.direction = Direction.get_direction(self.direction, action)
 
-        self.head = Point(self.head.x + self.direction.x, self.head.y + self.direction.y)
+        self.head = Point(self.head.x + self.direction.x,
+                          self.head.y + self.direction.y)
+        self.snake.insert(0, self.head)
 
     def reset(self):
         """reset is called at __init__ and by AI agent

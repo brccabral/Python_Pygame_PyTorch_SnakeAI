@@ -20,12 +20,11 @@ class Agent:
             INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
         self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
+        self.sum_actions = [0, 0, 0, 0]
+
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
-        0: If there is any danger Right,
-        1: If there is any danger Left,
-        2: If there is any danger Up
-        3: If there is any danger Down,
+        0-24: check if there is collision around head two steps ahead,
         4: Head row is even or odd
         5: Head column is even or odd
         6: Is food on the left
@@ -41,17 +40,15 @@ class Agent:
         """
         head = game.snake[0]
 
-        # get points around the head
-        point_left = Point(head.x - BLOCK_SIZE, head.y)
-        point_right = Point(head.x + BLOCK_SIZE, head.y)
-        point_up = Point(head.x, head.y - BLOCK_SIZE)
-        point_down = Point(head.x, head.y + BLOCK_SIZE)
+        # get collisions two steps ahead
+        collisions = []
+        for c in range(-2, 3):
+            for r in range(-2, 3):
+                if r == 0 and c == 0:
+                    continue
+                collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
 
-        state = [
-            game.is_collision(point_right),
-            game.is_collision(point_left),
-            game.is_collision(point_up),
-            game.is_collision(point_down),
+        state = collisions + [
 
             head.x % 2,
             head.y % 2,
@@ -94,7 +91,7 @@ class Agent:
         # in the beginning this is true for some time, later self.number_of_games is larger
         # than 80 and this will never get called
         if random.randint(0, 200) < self.epsilon:
-            move = random.randint(0, 2)
+            move = random.randint(0, OUTPUT_SIZE-1)
             action[move] = 1
         else:
             state0 = torch.tensor(state, dtype=torch.float)

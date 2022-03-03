@@ -5,7 +5,7 @@ import pygame
 from settings import *
 
 from genetic import GeneticAlgo, GeneticStats, Individual
-from helper import plot_genetic
+from helper import plot_genetic, timer
 
 pygame.init()
 if DISPLAY_GUI:
@@ -79,6 +79,7 @@ while True:
         print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_stats.generation_count} Best All {genetic_stats.best_score_all_time} Best Gen {genetic_stats.best_score_generation}')
         best_all_times.append(genetic_stats.best_score_all_time)
         best_generation.append(genetic_stats.best_score_generation)
+        # with timer('Plot'):
         plot_genetic(best_all_times, best_generation)
 
         if individual_save is not None:

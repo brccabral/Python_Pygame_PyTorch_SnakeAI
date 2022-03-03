@@ -37,7 +37,7 @@ class Agent_Play_Type(ABC):
 
 class Random_Play_Type(Agent_Play_Type):
     def __init__(self):
-        self.agent: Agent = None
+        self.agent: Agent = Agent()
 
     def get_action(self):
         action = [0 for _ in range(OUTPUT_SIZE)]
@@ -61,7 +61,7 @@ class Random_Play_Type(Agent_Play_Type):
 
 class User_Play_Type(Agent_Play_Type):
     def __init__(self):
-        self.agent: Agent = None
+        self.agent: Agent = Agent()
 
     def get_action(self, event: pygame.event.Event = None):
         if event is not None:

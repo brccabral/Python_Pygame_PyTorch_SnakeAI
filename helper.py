@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+import time
 import matplotlib.pyplot as plt
 from IPython import display
 
@@ -36,3 +38,11 @@ def plot_genetic(best_all_times, best_generation):
              best_generation[-1], str(best_generation[-1]))
     plt.show(block=False)
     plt.pause(.01)
+
+
+@contextmanager
+def timer(description = None):
+    start = time.time()
+    yield
+    end = time.time()
+    print(f"{description} - Elapsed Time: {(end - start)}s")
