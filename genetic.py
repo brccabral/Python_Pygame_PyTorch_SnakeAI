@@ -293,6 +293,23 @@ class GeneticAlgo:
         population = sorted(
             population, key=lambda individual: individual.fitness, reverse=True)
 
+        # return self.evolution(population)
+        return self.natural_selection(population)
+
+    def natural_selection(self, population):
+        pop_fitness = [individual.fitness for individual in population]
+        total_fitness = sum(pop_fitness)
+
+        new_population: List[Individual] = []
+        for order in range(0, NUMBER_OF_AGENTS):
+            child = self.select_individual(
+                population, pop_fitness, total_fitness, order)
+            child.set_order(order)
+            new_population.append(child)
+
+        return new_population
+
+    def evolution(self, population):
         pop_fitness = [individual.fitness for individual in population]
         total_fitness = sum(pop_fitness)
 
@@ -305,29 +322,8 @@ class GeneticAlgo:
                 population, pop_fitness, total_fitness, order)
             child = parent1.cross_over(parent2, order)
             child.mutate()
+            child.set_order(order)
             new_population.append(child)
-
-        # reset order
-        # for order in range(len(new_population)):
-        #     new_population[order].set_order(order)
-
-        # if len(population) == 2:
-        #     new_population.append(population[0])
-        #     new_population.append(self.new_individual(1))
-        # elif len(population) <= 4:
-        #     new_population.append(population[0])
-        #     new_population.append(population[1].mutate(1))
-        #     for order in range(2, len(population)):
-        #         new_population.append(self.new_individual(order))
-        # else:
-        #     p1, p2 = population[0], population[1]
-        #     new_population.append(p1)
-        #     new_population.append(p1.cross_over(p2, 1))
-        #     new_population.append(p2.cross_over(p1, 2))
-        #     for order, individual in enumerate(population[3:len(population)//2]):
-        #         new_population.append(individual.mutate(order + 3))
-        #     for order in range(len(population)//2, len(population)):
-        #         new_population.append(self.new_individual(order))
 
         return new_population
 
