@@ -59,13 +59,13 @@ class SnakeGameAI:
         """
         reward = 0
         if not self.game_over:
-            self.frame_iteration += 1
+            self.count_steps += 1
 
             # 2. move
             self._move(action)  # update the head
 
             # 3. check if game over
-            if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+            if self.is_collision() or self.count_steps > 2*(GAME_TABLE_ROWS*GAME_TABLE_COLUMNS):
                 self.game_over = True
                 reward = -10
                 return reward, self.game_over, self.score
@@ -144,6 +144,6 @@ class SnakeGameAI:
         self._place_food()
         # this will limit the number of moves the snake can make
         # until it is considered game over, default to 100*snake_size
-        self.frame_iteration = 0
+        self.count_steps = 0
 
         self.game_over = False
