@@ -20,8 +20,6 @@ class Agent:
             INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
         self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-        self.sum_actions = [0, 0, 0, 0]
-
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
         0-24: check if there is collision around head two steps ahead,
