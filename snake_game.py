@@ -1,8 +1,7 @@
 import pygame
 import random
 from collections import namedtuple
-from settings import *
-
+from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, GREEN1, GREEN2, BLACK, BLUE1, BLUE2, BLOCK_SIZE, BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, WHITE, RED
 
 Point = namedtuple('Point', 'x, y')
 
@@ -145,8 +144,10 @@ class SnakeGameAI:
 
         self.head = Point(GAME_TABLE_COLUMNS//2, GAME_TABLE_ROWS//2)
         self.snake = [self.head,
-                      Point(self.head.x-self.direction.x, self.head.y-self.direction.y),
-                      Point(self.head.x-self.direction.x*2, self.head.y-self.direction.y*2)]
+                      Point(self.head.x-self.direction.x,
+                            self.head.y-self.direction.y),
+                      Point(self.head.x-self.direction.x*2,
+                            self.head.y-self.direction.y*2)]
 
         self.score = 0
         self.food = None

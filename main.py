@@ -9,15 +9,15 @@ from genetic import GeneticAlgo
 from helper import plot_genetic, timer
 
 
-def main():
-    print(NUMBER_OF_AGENTS)
+def main(*args, **kwargs):
     pygame.init()
-    if DISPLAY_GUI:
+    if kwargs['display_gui']:
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption('SnakeAI')
         clock = pygame.time.Clock()
 
-    genetic_algo = GeneticAlgo()
+    genetic_algo = GeneticAlgo(
+        number_of_agents=kwargs['number_of_agents'], play_type=kwargs['play_type'])
 
     user_event = None
     best_all_times: List[int] = []
@@ -26,7 +26,7 @@ def main():
     while True:
         genetic_algo.play_step(user_event)
         # all games have ended, generation is done
-        if genetic_algo.total_game_over >= NUMBER_OF_AGENTS:
+        if genetic_algo.total_game_over >= kwargs['number_of_agents']:
             print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
 
             # with timer('Plot'):
@@ -38,7 +38,7 @@ def main():
                 plot_genetic(best_all_times, best_generation)
 
             if genetic_algo.individual_save is not None:
-                genetic_algo.individual_save.play_type.agent.model.save(
+                genetic_algo.individual_save.agent_play_type.agent.model.save(
                     file_name=f'model_{genetic_algo.individual_save.score}_{genetic_algo.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
 
             if genetic_algo.has_winner():
@@ -50,7 +50,7 @@ def main():
 
             genetic_algo.reset()
 
-        if DISPLAY_GUI:
+        if kwargs['display_gui']:
             genetic_algo.update_ui()
             user_event = None
             screen.fill(WHITE)
@@ -68,7 +68,7 @@ def main():
             for individual in genetic_algo.population:
                 if individual.order <= 15:
                     screen.blit(pygame.transform.scale(
-                        individual.game.display, (individual.game_w, individual.game_h)), (individual.game_x, individual.game_y))
+                        individual.game.display, (individual.display_w, individual.display_h)), (individual.game_x, individual.game_y))
                 else:
                     break
 
@@ -88,7 +88,6 @@ def main():
 
 
 if __name__ == "__main__":
-    # global NUMBER_OF_AGENTS, LR, INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE, DISPLAY_GUI, PLOT_CHART, PLAY_TYPE, MUTATION_PROBABILITY, MUTATION_RATE
 
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
@@ -97,8 +96,6 @@ if __name__ == "__main__":
                         help='input dimension for training (default: 30)')
     parser.add_argument('--hidden_dim', type=int, default=256, metavar='H',
                         help='hidden dimension for training (default: 256)')
-    parser.add_argument('--output_dim', type=int, default=4, metavar='OUT',
-                        help='output dimension for training (default: 4)')
     parser.add_argument('--number_of_agents', type=int, default=30, metavar='AGENTS',
                         help='number of agents (default: 30)')
     parser.add_argument('--mutation_prob', type=float, default=0.01, metavar='MUTPROB',
@@ -116,7 +113,6 @@ if __name__ == "__main__":
     LR = args.lr
     INPUT_SIZE = args.input_features
     HIDDEN_SIZE = args.hidden_dim
-    OUTPUT_SIZE = args.output_dim
 
     NUMBER_OF_AGENTS = args.number_of_agents
 
@@ -133,4 +129,5 @@ if __name__ == "__main__":
     else:
         PLAY_TYPE = Play_Type.AI
 
-    main()
+    main(lr=LR, input_size=INPUT_SIZE, hidden_size=HIDDEN_SIZE, number_of_agents=NUMBER_OF_AGENTS, display_gui=DISPLAY_GUI,
+         plot_chart=PLOT_CHART, mutation_prob=MUTATION_PROBABILITY, mutation_rate=MUTATION_RATE, play_type=PLAY_TYPE)

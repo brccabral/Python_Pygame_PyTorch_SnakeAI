@@ -6,7 +6,7 @@ import random
 from typing import List
 import pygame
 from agent import Agent
-from settings import *
+from settings import Play_Type, BLOCK_SIZE, GAME_WIDTH, GAME_HEIGHT, GAME_DISPLAY_PADDING, OUTPUT_SIZE, WHITE, BLACK, FITNESS_TARGET
 
 from snake_game import SnakeGameAI
 
@@ -38,11 +38,11 @@ class Agent_Play_Type(ABC):
 
 class Random_Play_Type(Agent_Play_Type):
     def __init__(self):
-        self.agent: Agent = Agent()
+        self.agent: Agent = None
 
     def get_action(self):
         action = [0 for _ in range(OUTPUT_SIZE)]
-        random_action_index = random.randint(0, 3)
+        random_action_index = random.randint(0, OUTPUT_SIZE-1)
         action[random_action_index] = 1
         return action
 
@@ -62,7 +62,7 @@ class Random_Play_Type(Agent_Play_Type):
 
 class User_Play_Type(Agent_Play_Type):
     def __init__(self):
-        self.agent: Agent = Agent()
+        self.agent: Agent = None
 
     def get_action(self, event: pygame.event.Event = None):
         if event is not None:
@@ -85,8 +85,11 @@ class User_Play_Type(Agent_Play_Type):
 
 
 class AI_Play_Type(Agent_Play_Type):
-    def __init__(self, agent: Agent):
+    def __init__(self, agent: Agent, lr=0.001, mutation_probability=0.01, mutation_rate=0.001):
         self.agent = agent
+        self.mutation_probability = mutation_probability
+        self.mutation_rate = mutation_rate
+        self.lr = lr
 
     def get_action(self, state: List = None):
         return self.agent.get_action(state)
@@ -106,7 +109,7 @@ class AI_Play_Type(Agent_Play_Type):
 
     def cross_over(self, parent2):
         self_state_dict = self.agent.model.state_dict()
-        p2_state_dict = parent2.play_type.agent.model.state_dict()
+        p2_state_dict = parent2.agent_play_type.agent.model.state_dict()
 
         cross1 = random.randint(
             1, self_state_dict['linear1.weight'].shape[1] - 1)
@@ -121,11 +124,11 @@ class AI_Play_Type(Agent_Play_Type):
                                            cross2:] = p2_state_dict['linear2.weight'][:, cross2:]
         child_state_dict['linear2.bias'][cross2:] = p2_state_dict['linear2.bias'][cross2:]
 
-        child = AI_Play_Type(Agent())
+        child = AI_Play_Type(Agent(self.lr), lr=self.lr, mutation_probability=self.mutation_probability, mutation_rate=self.mutation_rate)
         child.agent.model.load_state_dict(child_state_dict)
         child.agent.epsilon = self.agent.epsilon
         child.agent.number_of_games = self.agent.number_of_games
-        child.agent.memory_deque = self.agent.memory_deque
+        child.agent.memory_deque = self.agent.memory_deque.copy()
 
         return child
 
@@ -136,67 +139,72 @@ class AI_Play_Type(Agent_Play_Type):
         linear1_weights_probabilities = torch.tensor(
             [[random.uniform(0, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
         linear1_new_weights = torch.tensor(
-            [[random.uniform(1-MUTATION_RATE, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
+            [[random.uniform(1-self.mutation_rate, 1) for _ in range(linear1_columns)] for __ in range(linear1_rows)])
         linear1_new_weights = linear1_new_weights * \
             self_state_dict['linear1.weight']
         self_state_dict['linear1.weight'] = self_state_dict['linear1.weight'].where(
-            linear1_weights_probabilities > MUTATION_PROBABILITY, linear1_new_weights)
+            linear1_weights_probabilities > self.mutation_probability, linear1_new_weights)
 
         linear1_bias_probabilities = torch.tensor(
             [random.uniform(0, 1) for _ in range(linear1_rows)])
         linear1_new_bias = torch.tensor(
-            [random.uniform(1-MUTATION_RATE, 1) for _ in range(linear1_rows)])
+            [random.uniform(1-self.mutation_rate, 1) for _ in range(linear1_rows)])
         linear1_new_bias = linear1_new_bias * self_state_dict['linear1.bias']
         self_state_dict['linear1.bias'] = self_state_dict['linear1.bias'].where(
-            linear1_bias_probabilities > MUTATION_PROBABILITY, linear1_new_bias)
+            linear1_bias_probabilities > self.mutation_probability, linear1_new_bias)
 
         linear2_rows, linear2_columns = self_state_dict['linear2.weight'].shape
         linear2_weights_probabilities = torch.tensor(
             [[random.uniform(0, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
         linear2_new_weights = torch.tensor(
-            [[random.uniform(1-MUTATION_RATE, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
+            [[random.uniform(1-self.mutation_rate, 1) for _ in range(linear2_columns)] for __ in range(linear2_rows)])
         linear2_new_weights = linear2_new_weights * \
             self_state_dict['linear2.weight']
         self_state_dict['linear2.weight'] = self_state_dict['linear2.weight'].where(
-            linear2_weights_probabilities > MUTATION_PROBABILITY, linear2_new_weights)
+            linear2_weights_probabilities > self.mutation_probability, linear2_new_weights)
 
         linear2_bias_probabilities = torch.tensor(
             [random.uniform(0, 1) for _ in range(linear2_rows)])
         linear2_new_bias = torch.tensor(
-            [random.uniform(1-MUTATION_RATE, 1) for _ in range(linear2_rows)])
+            [random.uniform(1-self.mutation_rate, 1) for _ in range(linear2_rows)])
         linear2_new_bias = linear2_new_bias * self_state_dict['linear2.bias']
         self_state_dict['linear2.bias'] = self_state_dict['linear2.bias'].where(
-            linear2_bias_probabilities > MUTATION_PROBABILITY, linear2_new_bias)
+            linear2_bias_probabilities > self.mutation_probability, linear2_new_bias)
 
         self.agent.model.load_state_dict(self_state_dict)
 
 
 class Individual:
-    def __init__(self, game: SnakeGameAI, order):
+    def __init__(self, game: SnakeGameAI, order=0, number_of_agents=30, play_type: Play_Type = Play_Type.AI, lr=0.001, mutation_probability=0.01, mutation_rate=0.001):
         self.game = game
         self.game_over = False
         self.reward = 0
         self.score = 0
-        self.number_of_individuals = NUMBER_OF_AGENTS
-        self.screen_w = GAME_WIDTH
-        self.screen_h = GAME_HEIGHT
+        self.number_of_agents = number_of_agents
+        self.lr = lr
+        self.mutation_probability = mutation_probability
+        self.mutation_rate = mutation_rate
+        self.game_width = GAME_WIDTH
+        self.game_height = GAME_HEIGHT
         self.display_padding = GAME_DISPLAY_PADDING
+        self.square = math.ceil(math.sqrt(min(self.number_of_agents, 15)))
+        self.display_w = self.game_width // self.square - self.display_padding
+        self.display_h = self.game_height // self.square - self.display_padding
         self.order = order
-        self.square = math.ceil(math.sqrt(min(self.number_of_individuals, 15)))
         self.set_display()
         self.fitness = 0
 
-        length_x = GAME_WIDTH//BLOCK_SIZE
-        length_y = GAME_HEIGHT//BLOCK_SIZE
+        length_x = self.game_width//BLOCK_SIZE
+        length_y = self.game_height//BLOCK_SIZE
 
         self.total_board_size = length_x*length_y
 
-        if PLAY_TYPE == Play_Type.RANDOM:
-            self.set_play_type(Random_Play_Type())
-        elif PLAY_TYPE == Play_Type.AI:
-            self.set_play_type(AI_Play_Type(Agent()))
-        elif PLAY_TYPE == Play_Type.USER:
-            self.set_play_type(User_Play_Type())
+        if play_type == Play_Type.RANDOM:
+            self.set_agent_play_type(Random_Play_Type())
+        elif play_type == Play_Type.USER:
+            self.set_agent_play_type(User_Play_Type())
+        else:
+            self.set_agent_play_type(AI_Play_Type(Agent(lr=self.lr), lr=self.lr, mutation_probability=self.mutation_probability, mutation_rate=self.mutation_rate))
 
     def set_order(self, order):
         self.order = order
@@ -205,46 +213,46 @@ class Individual:
     def set_display(self):
         game_column = self.order % self.square
         game_row = self.order // self.square
-        self.game_w = self.screen_w // self.square - self.display_padding
-        self.game_h = self.screen_h // self.square - self.display_padding
+
         self.game_x = game_column * \
-            (self.game_w + self.display_padding) + self.display_padding
-        self.game_y = game_row * (self.game_h + self.display_padding) + \
+            (self.display_w + self.display_padding) + self.display_padding
+        self.game_y = game_row * (self.display_h + self.display_padding) + \
             self.display_padding
 
     def update_fitness(self):
         self.fitness = pow(len(self.game.snake), 2)
 
     def copy(self, order):
-        new_copy = Individual(SnakeGameAI(), order=order)
-        new_copy.play_type.agent.model.load_state_dict(
-            self.play_type.agent.model.state_dict())
-        new_copy.play_type.agent.memory_deque = self.play_type.agent.memory_deque.copy()
-        new_copy.play_type.agent.number_of_games = self.play_type.agent.number_of_games
-        new_copy.play_type.agent.epsilon = self.play_type.agent.epsilon
+        new_copy = Individual(SnakeGameAI(
+        ), order=order, number_of_agents=self.number_of_agents, play_type=self.agent_play_type, lr=self.lr)
+        new_copy.agent_play_type.agent.model.load_state_dict(
+            self.agent_play_type.agent.model.state_dict())
+        new_copy.agent_play_type.agent.memory_deque = self.agent_play_type.agent.memory_deque.copy()
+        new_copy.agent_play_type.agent.number_of_games = self.agent_play_type.agent.number_of_games
+        new_copy.agent_play_type.agent.epsilon = self.agent_play_type.agent.epsilon
 
         return new_copy
 
     def cross_over(self, parent2, order):
         child = self.copy(order)
-        child.play_type = self.play_type.cross_over(parent2)
+        child.agent_play_type = self.agent_play_type.cross_over(parent2)
         return child
 
     def mutate(self):
-        self.play_type.mutate()
+        self.agent_play_type.mutate()
 
-    def set_play_type(self, play_type: Agent_Play_Type):
-        self.play_type = play_type
+    def set_agent_play_type(self, play_type: Agent_Play_Type):
+        self.agent_play_type = play_type
 
     def play_step(self, event=None):
-        self.reward, self.game_over, self.score = self.play_type.play_step(
+        self.reward, self.game_over, self.score = self.agent_play_type.play_step(
             self.game, event)
         self.update_fitness()
 
     def reset(self):
         self.score = 0
         self.game.reset()
-        self.play_type.agent.number_of_games += 1
+        self.agent_play_type.agent.number_of_games += 1
         self.game_over = False
 
     def update_ui(self):
@@ -283,8 +291,10 @@ class GeneticStats:
 
 
 class GeneticAlgo:
-    def __init__(self, generation_limit=100):
-        self.population_size = NUMBER_OF_AGENTS
+    def __init__(self, number_of_agents=30, play_type: Play_Type = Play_Type.AI, lr=0.001):
+        self.population_size = number_of_agents
+        self.play_type = play_type
+        self.lr = lr
         self.display_padding = GAME_DISPLAY_PADDING
 
         length_x = GAME_WIDTH//BLOCK_SIZE
@@ -304,7 +314,7 @@ class GeneticAlgo:
             i) for i in range(self.population_size)]
 
     def new_individual(self, order):
-        return Individual(SnakeGameAI(), order=order)
+        return Individual(SnakeGameAI(), order=order, number_of_agents=self.population_size, play_type=self.play_type, lr=self.lr)
 
     def new_population(self) -> List[Individual]:
         if len(self.population) == 1:
@@ -321,7 +331,7 @@ class GeneticAlgo:
 
         self.population[0].set_order(0)
 
-        for order in range(1, NUMBER_OF_AGENTS):
+        for order in range(1, self.population_size):
             selected = self.select_individual(
                 pop_fitness, total_fitness)
             self.population[order] = self.population[selected].copy(order)
@@ -333,7 +343,7 @@ class GeneticAlgo:
 
         self.population[0].set_order(0)
 
-        for order in range(1, NUMBER_OF_AGENTS):
+        for order in range(1, self.population_size):
             selected1 = self.select_individual(
                 pop_fitness, total_fitness)
             selected2 = self.select_individual(
@@ -378,7 +388,7 @@ class GeneticAlgo:
         self.population = sorted(
             self.population, key=lambda individual: individual.fitness, reverse=True)
         if self.population[0].fitness >= FITNESS_TARGET:
-            self.population[0].play_type.agent.model.save(
+            self.population[0].agent_play_type.agent.model.save(
                 file_name=f'model_winner_{self.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
             print(
                 f'Generation {self.genetic_stats.generation_count} has a winner ID {self.population[0].order}')

@@ -5,11 +5,11 @@ from collections import deque
 from model import Linear_QNet, QTrainer
 from snake_game import SnakeGameAI, Point
 from helper import plot
-from settings import *
+from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
 
 
 class Agent:
-    def __init__(self):
+    def __init__(self, input_size=30, hidden_size=256, lr=0.001):
         self.number_of_games = 0
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate, has to be less than 1, usually 0.8-0.99
@@ -17,8 +17,8 @@ class Agent:
         self.memory_deque = deque(maxlen=MAX_MEMORY)
 
         self.model: Linear_QNet = Linear_QNet(
-            INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+            input_size, hidden_size, OUTPUT_SIZE)
+        self.trainer: QTrainer = QTrainer(self.model, lr=lr, gamma=self.gamma)
 
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
