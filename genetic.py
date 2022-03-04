@@ -1,4 +1,5 @@
 from abc import ABC, abstractclassmethod
+import datetime
 import math
 import torch
 import random
@@ -216,7 +217,12 @@ class Individual:
 
     def copy(self, order):
         new_copy = Individual(SnakeGameAI(), order=order)
-        new_copy.play_type = self.play_type
+        new_copy.play_type.agent.model.load_state_dict(
+            self.play_type.agent.model.state_dict())
+        new_copy.play_type.agent.memory_deque = self.play_type.agent.memory_deque.copy()
+        new_copy.play_type.agent.number_of_games = self.play_type.agent.number_of_games
+        new_copy.play_type.agent.epsilon = self.play_type.agent.epsilon
+
         return new_copy
 
     def cross_over(self, parent2, order):
@@ -233,6 +239,7 @@ class Individual:
     def play_step(self, event=None):
         self.reward, self.game_over, self.score = self.play_type.play_step(
             self.game, event)
+        self.update_fitness()
 
     def reset(self):
         self.score = 0
@@ -240,21 +247,23 @@ class Individual:
         self.play_type.agent.number_of_games += 1
         self.game_over = False
 
+    def update_ui(self):
+        self.game.update_ui()
+
     def __repr__(self):
         return f'Order {self.order} Score {self.score} X {self.game_x} Y {self.game_y}'
 
 
 class GeneticStats:
-    def __init__(self, population_size=1, w=350, h=480):
+    def __init__(self, w=350, h=480):
         self.w = w
         self.h = h
         # init display
         self.display = pygame.Surface((self.w, self.h))
         self.font = pygame.font.Font('arial.ttf', 25)
-        self.population_size = population_size
         self.best_score_all_time = 0
         self.best_score_generation = 0
-        self.best_individual = 0
+        self.best_individual_order: int = 0
         self.generation_count = 0
 
     def update_ui(self):
@@ -266,7 +275,7 @@ class GeneticStats:
             f"Best Score Generation: {self.best_score_generation}", True, BLACK)
         self.display.blit(text, [10, 30])
         text = self.font.render(
-            f"Best Individual: {self.best_individual}", True, BLACK)
+            f"Best Individual: {self.best_individual_order}", True, BLACK)
         self.display.blit(text, [10, 50])
         text = self.font.render(
             f"Generation: {self.generation_count}", True, BLACK)
@@ -283,61 +292,113 @@ class GeneticAlgo:
 
         self.total_board_size = length_x*length_y
 
+        self.generate_population()
+        self.individual_highlight: Individual = self.population[0]
+        self.individual_save: Individual = None
+        self.total_game_over = 0
+
+        self.genetic_stats = GeneticStats()
+
     def generate_population(self):
-        return [self.new_individual(i) for i in range(self.population_size)]
+        self.population = [self.new_individual(
+            i) for i in range(self.population_size)]
 
     def new_individual(self, order):
         return Individual(SnakeGameAI(), order=order)
 
-    def new_population(self, population: List[Individual] = None) -> List[Individual]:
-        if population is None:
-            return self.generate_population()
-        if len(population) == 1:
-            return population
+    def new_population(self) -> List[Individual]:
+        if len(self.population) == 1:
+            return
 
-        # sort based on fitness (main script sorts it)
-        # population = sorted(
-        #     population, key=lambda individual: individual.fitness, reverse=True)
+        # self.evolution(population)
+        self.natural_selection()
+        self.individual_highlight = self.population[0]
+        self.genetic_stats.best_individual_order = 0
 
-        return self.evolution(population)
-        # return self.natural_selection(population)
-
-    def natural_selection(self, population: List[Individual]):
-        pop_fitness = [individual.fitness for individual in population]
+    def natural_selection(self):
+        pop_fitness = [individual.fitness for individual in self.population]
         total_fitness = sum(pop_fitness)
 
-        new_population: List[Individual] = []
-        for order in range(0, NUMBER_OF_AGENTS):
-            child = self.select_individual(
-                population, pop_fitness, total_fitness, order)
-            child.set_order(order)
-            new_population.append(child)
+        self.population[0].set_order(0)
 
-        return new_population
-
-    def evolution(self, population: List[Individual]):
-        pop_fitness = [individual.fitness for individual in population]
-        total_fitness = sum(pop_fitness)
-
-        population[0].set_order(0)
-        new_population: List[Individual] = [population[0]]
         for order in range(1, NUMBER_OF_AGENTS):
-            parent1 = self.select_individual(
-                population, pop_fitness, total_fitness, order)
-            parent2 = self.select_individual(
-                population, pop_fitness, total_fitness, order)
-            child = parent1.cross_over(parent2, order)
+            selected = self.select_individual(
+                pop_fitness, total_fitness, order)
+            self.population[order] = self.population[selected]
+            self.population[order].set_order(order)
+
+    def evolution(self):
+        pop_fitness = [individual.fitness for individual in self.population]
+        total_fitness = sum(pop_fitness)
+
+        self.population[0].set_order(0)
+
+        for order in range(1, NUMBER_OF_AGENTS):
+            selected1 = self.select_individual(
+                pop_fitness, total_fitness, order)
+            selected2 = self.select_individual(
+                pop_fitness, total_fitness, order)
+            child = self.population[selected1].cross_over(
+                self.population[selected2], order)
             child.mutate()
             child.set_order(order)
-            new_population.append(child)
+            self.population[order] = child
 
-        return new_population
-
-    def select_individual(self, population: List[Individual], pop_fitness: List[float], total_fitness, order):
+    def select_individual(self, pop_fitness: List[float], total_fitness, order):
         pick_probability = random.random()
         select = 0
         while pick_probability >= 0:
             pick_probability -= pop_fitness[select]/total_fitness
             select += 1
         select -= 1
-        return population[select].copy(order)
+        return select
+
+    def play_step(self, user_event: List[int]):
+
+        for individual in self.population:
+
+            if individual.game_over:
+                self.total_game_over += 1
+                continue
+
+            if self.individual_highlight.game_over:
+                self.individual_highlight = individual
+            individual.play_step(user_event)
+
+            if individual.score > self.genetic_stats.best_score_all_time:
+                self.genetic_stats.best_score_all_time = individual.score
+                self.individual_save = individual
+
+            if individual.score > self.genetic_stats.best_score_generation:
+                self.individual_highlight = individual
+                self.genetic_stats.best_score_generation = individual.score
+                self.genetic_stats.best_individual_order = individual.order
+
+    def has_winner(self):
+        self.population = sorted(
+            self.population, key=lambda individual: individual.fitness, reverse=True)
+        if self.population[0].fitness >= FITNESS_TARGET:
+            self.population[0].play_type.agent.model.save(
+                file_name=f'model_winner_{self.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
+            print(
+                f'Generation {self.genetic_stats.generation_count} has a winner ID {self.population[0].order}')
+
+    def reset(self):
+        self.total_game_over = 0
+        self.individual_save = None
+        for individual in self.population:
+            individual.reset()
+
+        self.genetic_stats.best_score_generation = 0
+        self.genetic_stats.generation_count += 1
+
+        self.new_population()
+
+    def update_ui(self):
+        self.genetic_stats.update_ui()
+
+        for individual in self.population:
+            if individual.order <= 15:
+                individual.update_ui()
+            else:
+                break

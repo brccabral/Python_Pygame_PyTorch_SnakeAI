@@ -16,9 +16,7 @@ if DISPLAY_GUI:
 
 genetic_algo = GeneticAlgo()
 
-population = genetic_algo.new_population()
-genetic_stats = GeneticStats(NUMBER_OF_AGENTS)
-individual_highlight: Individual = population[0]
+genetic_algo.new_population()
 individual_save: Individual = None
 
 user_event = None
@@ -26,7 +24,34 @@ best_all_times: List[int] = []
 best_generation: List[int] = []
 
 while True:
+    genetic_algo.play_step(user_event)
+    # all games have ended, generation is done
+    if genetic_algo.total_game_over == NUMBER_OF_AGENTS:
+        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
+
+        # with timer('Plot'):
+        if PLOT_CHART:
+            best_all_times.append(
+                genetic_algo.genetic_stats.best_score_all_time)
+            best_generation.append(
+                genetic_algo.genetic_stats.best_score_generation)
+            plot_genetic(best_all_times, best_generation)
+
+        if genetic_algo.individual_save is not None:
+            genetic_algo.individual_save.play_type.agent.model.save(
+                file_name=f'model_{genetic_algo.individual_save.score}_{genetic_algo.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
+
+        if genetic_algo.has_winner():
+            break
+
+        if genetic_algo.genetic_stats.generation_count > MAX_GENERATIONS:
+            print(f'Max generations reached {MAX_GENERATIONS}')
+            break
+
+        genetic_algo.reset()
+
     if DISPLAY_GUI:
+        genetic_algo.update_ui()
         user_event = None
         screen.fill(WHITE)
         for event in pygame.event.get():
@@ -40,83 +65,24 @@ while True:
                 if PLAY_TYPE == Play_Type.USER:
                     user_event = event
 
-    total_game_over = 0
-    for individual in population:
-
-        if individual.game_over:
-            total_game_over += 1
-        else:
-            if individual_highlight.game_over:
-                individual_highlight = individual
-            individual.play_step(user_event)
-            individual.update_fitness()
-
-        if individual.score > genetic_stats.best_score_all_time:
-            genetic_stats.best_score_all_time = individual.score
-            individual_save = individual
-
-        if individual.score > genetic_stats.best_score_generation:
-            individual_highlight = individual
-            genetic_stats.best_score_generation = individual.score
-            genetic_stats.best_individual = individual.order
-
-        if DISPLAY_GUI:
+        for individual in genetic_algo.population:
             if individual.order <= 15:
-                individual.game.update_ui()
                 screen.blit(pygame.transform.scale(
                     individual.game.display, (individual.game_w, individual.game_h)), (individual.game_x, individual.game_y))
+            else:
+                break
 
-            genetic_stats.update_ui()
-            screen.blit(pygame.transform.scale(genetic_stats.display,
-                        (genetic_stats.w, genetic_stats.h)), (SCREEN_WIDTH - 450, 0))
+        screen.blit(pygame.transform.scale(genetic_algo.genetic_stats.display,
+                    (genetic_algo.genetic_stats.w, genetic_algo.genetic_stats.h)), (SCREEN_WIDTH - 450, 0))
 
-            individual_highlight.game.update_ui()
-            screen.blit(pygame.transform.scale(individual_highlight.game.display,
-                        (400, 240)), (SCREEN_WIDTH - 450, 200))
+        screen.blit(pygame.transform.scale(genetic_algo.individual_highlight.game.display,
+                    (400, 240)), (SCREEN_WIDTH - 450, 200))
 
-    # all games have ended, generation is done
-    if total_game_over == len(population):
-        print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_stats.generation_count} Best All {genetic_stats.best_score_all_time} Best Gen {genetic_stats.best_score_generation}')
-        best_all_times.append(genetic_stats.best_score_all_time)
-        best_generation.append(genetic_stats.best_score_generation)
-        # with timer('Plot'):
-        if PLOT_CHART:
-            plot_genetic(best_all_times, best_generation)
-
-        if individual_save is not None:
-            individual_save.play_type.agent.model.save(
-                file_name=f'model_{individual_save.score}_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
-            individual_save = None
-
-        population = sorted(
-            population, key=lambda individual: individual.fitness, reverse=True)
-        if population[0].fitness >= FITNESS_TARGET:
-            winner = population[0]
-            winner.play_type.agent.model.save(
-                file_name=f'model_winner_{genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
-            print(
-                f'Generation {genetic_stats.generation_count} has a winner ID {population[0].order}')
-            break
-
-        if genetic_stats.generation_count > MAX_GENERATIONS:
-            print(f'Max generations reached {MAX_GENERATIONS}')
-            break
-
-        genetic_stats.best_score_generation = 0
-        genetic_stats.generation_count += 1
-        for individual in population:
-            individual.reset()
-
-        population = genetic_algo.new_population(population)
-        individual_highlight = population[0]
-        genetic_stats.best_individual = individual_highlight.order
-
-    if DISPLAY_GUI:
         pygame.display.update()
         clock.tick(CLOCK_SPEED)
 
 
 print(
-    f'best_score_all_time {genetic_stats.best_score_all_time} generation_count {genetic_stats.generation_count}')
+    f'best_score_all_time {genetic_algo.genetic_stats.best_score_all_time} generation_count {genetic_algo.genetic_stats.generation_count}')
 
 pygame.quit()
