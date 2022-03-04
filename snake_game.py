@@ -75,6 +75,7 @@ class SnakeGameAI:
                 self.score += 1
                 self._place_food()
                 reward = 10
+                self.count_steps = 0
             else:
                 self.snake.pop()
 
