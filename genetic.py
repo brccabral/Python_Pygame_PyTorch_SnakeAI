@@ -402,3 +402,4 @@ class GeneticAlgo:
                 individual.update_ui()
             else:
                 break
+        self.individual_highlight.update_ui()
