@@ -309,7 +309,6 @@ class GeneticAlgo:
         self.hidden_size = hidden_size
         self.mutation_prob = mutation_prob
         self.mutation_rate = mutation_rate
-        self.display_padding = GAME_DISPLAY_PADDING
 
         length_x = GAME_WIDTH//BLOCK_SIZE
         length_y = GAME_HEIGHT//BLOCK_SIZE
@@ -322,6 +321,9 @@ class GeneticAlgo:
         self.total_game_over = 0
 
         self.genetic_stats = GeneticStats()
+
+    def __repr__(self):
+        return f'Genetic Pop={self.population_size} LR={self.lr} Mut_Prob={self.mutation_prob}, Mut_Rate={self.mutation_rate}'
 
     def generate_population(self):
         self.population = [self.new_individual(

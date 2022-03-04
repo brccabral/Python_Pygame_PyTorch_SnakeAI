@@ -37,7 +37,8 @@ def main(*args, **kwargs):
                     genetic_algo.genetic_stats.best_score_all_time)
                 best_generation.append(
                     genetic_algo.genetic_stats.best_score_generation)
-                plot_genetic(best_all_times, best_generation)
+                plot_genetic(best_all_times, best_generation,
+                             title=genetic_algo.__repr__())
 
             if genetic_algo.individual_save is not None:
                 genetic_algo.individual_save.agent_play_type.agent.model.save(

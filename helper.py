@@ -22,11 +22,11 @@ def plot(scores, mean_scores):
     plt.pause(.1)
 
 
-def plot_genetic(best_all_times, best_generation):
+def plot_genetic(best_all_times, best_generation, title='Genetic...'):
     display.clear_output(wait=True)
     display.display(plt.gcf())  # get current figure
     plt.clf()  # clear figure
-    plt.title('Genetic...')
+    plt.title(title)
     plt.xlabel('Number of generations')
     plt.ylabel('Score')
     plt.plot(best_all_times)
@@ -36,12 +36,13 @@ def plot_genetic(best_all_times, best_generation):
              best_all_times[-1], str(best_all_times[-1]))
     plt.text(len(best_generation)-1,
              best_generation[-1], str(best_generation[-1]))
+    plt.annotate(text="LR=0.001", xy=(0.0, 0.0))
     plt.show(block=False)
     plt.pause(.01)
 
 
 @contextmanager
-def timer(description = None):
+def timer(description=None):
     start = time.time()
     yield
     end = time.time()
