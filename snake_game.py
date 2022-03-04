@@ -133,12 +133,20 @@ class SnakeGameAI:
         """
 
         # init game state
-        self.direction = Direction.RIGHT
+        direction = random.randint(0, 3)
+        if direction == 0:
+            self.direction = Direction.LEFT
+        elif direction == 1:
+            self.direction = Direction.UP
+        elif direction == 2:
+            self.direction = Direction.RIGHT
+        else:
+            self.direction = Direction.DOWN
 
         self.head = Point(GAME_TABLE_COLUMNS//2, GAME_TABLE_ROWS//2)
         self.snake = [self.head,
-                      Point(self.head.x-1, self.head.y),
-                      Point(self.head.x-2, self.head.y)]
+                      Point(self.head.x-self.direction.x, self.head.y-self.direction.y),
+                      Point(self.head.x-self.direction.x*2, self.head.y-self.direction.y*2)]
 
         self.score = 0
         self.food = None
