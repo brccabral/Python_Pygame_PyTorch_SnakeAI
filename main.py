@@ -4,20 +4,16 @@ from typing import List
 import pygame
 from settings import *
 
-from genetic import GeneticAlgo, GeneticStats, Individual
+from genetic import GeneticAlgo
 from helper import plot_genetic, timer
 
 pygame.init()
 if DISPLAY_GUI:
-
     screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
     pygame.display.set_caption('SnakeAI')
     clock = pygame.time.Clock()
 
 genetic_algo = GeneticAlgo()
-
-genetic_algo.new_population()
-individual_save: Individual = None
 
 user_event = None
 best_all_times: List[int] = []
@@ -26,7 +22,7 @@ best_generation: List[int] = []
 while True:
     genetic_algo.play_step(user_event)
     # all games have ended, generation is done
-    if genetic_algo.total_game_over == NUMBER_OF_AGENTS:
+    if genetic_algo.total_game_over >= NUMBER_OF_AGENTS:
         print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
 
         # with timer('Plot'):
