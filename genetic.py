@@ -323,8 +323,8 @@ class GeneticAlgo:
 
         for order in range(1, NUMBER_OF_AGENTS):
             selected = self.select_individual(
-                pop_fitness, total_fitness, order)
-            self.population[order] = self.population[selected]
+                pop_fitness, total_fitness)
+            self.population[order] = self.population[selected].copy(order)
             self.population[order].set_order(order)
 
     def evolution(self):
@@ -335,16 +335,16 @@ class GeneticAlgo:
 
         for order in range(1, NUMBER_OF_AGENTS):
             selected1 = self.select_individual(
-                pop_fitness, total_fitness, order)
+                pop_fitness, total_fitness)
             selected2 = self.select_individual(
-                pop_fitness, total_fitness, order)
+                pop_fitness, total_fitness)
             child = self.population[selected1].cross_over(
                 self.population[selected2], order)
             child.mutate()
             child.set_order(order)
             self.population[order] = child
 
-    def select_individual(self, pop_fitness: List[float], total_fitness, order):
+    def select_individual(self, pop_fitness: List[float], total_fitness):
         pick_probability = random.random()
         select = 0
         while pick_probability >= 0:
