@@ -13,7 +13,7 @@ class Direction:
     DOWN = Point(0, 1)
 
     @classmethod
-    def get_direction(cls, current_direction, action=[0, 0, 0, 0]):
+    def get_direction(cls, current_direction: Point, action=[0, 0, 0, 0]) -> Point:
         try:
             current_index = action.index(1)
         except ValueError:

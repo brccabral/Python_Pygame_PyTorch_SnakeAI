@@ -9,7 +9,7 @@ from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
 
 
 class Agent:
-    def __init__(self, input_size=30, hidden_size=256, lr=0.001):
+    def __init__(self, input_size: int, hidden_size: int, lr: float):
         self.number_of_games = 0
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate, has to be less than 1, usually 0.8-0.99

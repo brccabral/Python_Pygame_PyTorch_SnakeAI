@@ -6,7 +6,7 @@ import os
 
 
 class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size: int, hidden_size: int, output_size: int):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, output_size)
@@ -30,7 +30,7 @@ class Linear_QNet(nn.Module):
 
 
 class QTrainer:
-    def __init__(self, model: Linear_QNet, lr, gamma):
+    def __init__(self, model: Linear_QNet, lr: float, gamma: float):
         self.model = model
         self.lr = lr
         self.gamma = gamma

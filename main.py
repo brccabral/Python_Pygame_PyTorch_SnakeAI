@@ -3,7 +3,7 @@ import sys
 import argparse
 from typing import List
 import pygame
-from settings import *
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT, MAX_GENERATIONS, WHITE, Play_Type, CLOCK_SPEED
 
 from genetic import GeneticAlgo
 from helper import plot_genetic, timer
@@ -17,7 +17,9 @@ def main(*args, **kwargs):
         clock = pygame.time.Clock()
 
     genetic_algo = GeneticAlgo(
-        number_of_agents=kwargs['number_of_agents'], play_type=kwargs['play_type'])
+        number_of_agents=kwargs['number_of_agents'], play_type=kwargs['play_type'],
+        lr=kwargs['lr'], input_size=kwargs['input_size'], hidden_size=kwargs['hidden_size'],
+        mutation_prob=kwargs['mutation_prob'], mutation_rate=kwargs['mutation_rate'])
 
     user_event = None
     best_all_times: List[int] = []
@@ -30,7 +32,7 @@ def main(*args, **kwargs):
             print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
 
             # with timer('Plot'):
-            if PLOT_CHART:
+            if kwargs['plot_chart']:
                 best_all_times.append(
                     genetic_algo.genetic_stats.best_score_all_time)
                 best_generation.append(
@@ -62,7 +64,7 @@ def main(*args, **kwargs):
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
                         sys.exit()
-                    if PLAY_TYPE == Play_Type.USER:
+                    if kwargs['play_type'] == Play_Type.USER:
                         user_event = event
 
             for individual in genetic_algo.population:
@@ -110,18 +112,6 @@ if __name__ == "__main__":
                         help='play type (default: 3 - AI)')
     args = parser.parse_args()
 
-    LR = args.lr
-    INPUT_SIZE = args.input_features
-    HIDDEN_SIZE = args.hidden_dim
-
-    NUMBER_OF_AGENTS = args.number_of_agents
-
-    DISPLAY_GUI = args.display_gui
-    PLOT_CHART = args.plot_chart
-
-    MUTATION_PROBABILITY = args.mutation_prob
-    MUTATION_RATE = args.mutation_rate
-
     if args.play_type == 1:
         PLAY_TYPE = Play_Type.RANDOM
     elif args.play_type == 2:
@@ -129,5 +119,5 @@ if __name__ == "__main__":
     else:
         PLAY_TYPE = Play_Type.AI
 
-    main(lr=LR, input_size=INPUT_SIZE, hidden_size=HIDDEN_SIZE, number_of_agents=NUMBER_OF_AGENTS, display_gui=DISPLAY_GUI,
-         plot_chart=PLOT_CHART, mutation_prob=MUTATION_PROBABILITY, mutation_rate=MUTATION_RATE, play_type=PLAY_TYPE)
+    main(lr=args.lr, input_size=args.input_features, hidden_size=args.hidden_dim, number_of_agents=args.number_of_agents, display_gui=args.display_gui,
+         plot_chart=args.plot_chart, mutation_prob=args.mutation_prob, mutation_rate=args.mutation_rate, play_type=PLAY_TYPE)

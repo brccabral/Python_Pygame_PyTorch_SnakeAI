@@ -85,11 +85,13 @@ class User_Play_Type(Agent_Play_Type):
 
 
 class AI_Play_Type(Agent_Play_Type):
-    def __init__(self, agent: Agent, lr=0.001, mutation_probability=0.01, mutation_rate=0.001):
+    def __init__(self, agent: Agent, lr: float, input_size: int, hidden_size: int, mutation_probability: float, mutation_rate: float):
         self.agent = agent
         self.mutation_probability = mutation_probability
         self.mutation_rate = mutation_rate
         self.lr = lr
+        self.input_size = input_size
+        self.hidden_size = hidden_size
 
     def get_action(self, state: List = None):
         return self.agent.get_action(state)
@@ -124,7 +126,9 @@ class AI_Play_Type(Agent_Play_Type):
                                            cross2:] = p2_state_dict['linear2.weight'][:, cross2:]
         child_state_dict['linear2.bias'][cross2:] = p2_state_dict['linear2.bias'][cross2:]
 
-        child = AI_Play_Type(Agent(self.lr), lr=self.lr, mutation_probability=self.mutation_probability, mutation_rate=self.mutation_rate)
+        child = AI_Play_Type(Agent(input_size=self.input_size, hidden_size=self.hidden_size,
+                                   lr=self.lr), lr=self.lr, input_size=self.input_size, hidden_size=self.hidden_size,
+                             mutation_probability=self.mutation_probability, mutation_rate=self.mutation_rate)
         child.agent.model.load_state_dict(child_state_dict)
         child.agent.epsilon = self.agent.epsilon
         child.agent.number_of_games = self.agent.number_of_games
@@ -175,14 +179,17 @@ class AI_Play_Type(Agent_Play_Type):
 
 
 class Individual:
-    def __init__(self, game: SnakeGameAI, order=0, number_of_agents=30, play_type: Play_Type = Play_Type.AI, lr=0.001, mutation_probability=0.01, mutation_rate=0.001):
+    def __init__(self, game: SnakeGameAI, order: int, number_of_agents: int, play_type: Play_Type,
+                 lr: float, mutation_prob: float, mutation_rate: float, input_size: int, hidden_size: int):
         self.game = game
         self.game_over = False
         self.reward = 0
         self.score = 0
         self.number_of_agents = number_of_agents
         self.lr = lr
-        self.mutation_probability = mutation_probability
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.mutation_prob = mutation_prob
         self.mutation_rate = mutation_rate
         self.game_width = GAME_WIDTH
         self.game_height = GAME_HEIGHT
@@ -204,7 +211,9 @@ class Individual:
         elif play_type == Play_Type.USER:
             self.set_agent_play_type(User_Play_Type())
         else:
-            self.set_agent_play_type(AI_Play_Type(Agent(lr=self.lr), lr=self.lr, mutation_probability=self.mutation_probability, mutation_rate=self.mutation_rate))
+            self.set_agent_play_type(AI_Play_Type(Agent(input_size=self.input_size, hidden_size=self.hidden_size,
+                                     lr=self.lr), lr=self.lr, input_size=self.input_size, hidden_size=self.hidden_size,
+                                     mutation_probability=self.mutation_prob, mutation_rate=self.mutation_rate))
 
     def set_order(self, order):
         self.order = order
@@ -223,8 +232,9 @@ class Individual:
         self.fitness = pow(len(self.game.snake), 2)
 
     def copy(self, order):
-        new_copy = Individual(SnakeGameAI(
-        ), order=order, number_of_agents=self.number_of_agents, play_type=self.agent_play_type, lr=self.lr)
+        new_copy = Individual(SnakeGameAI(), order=order, number_of_agents=self.number_of_agents,
+                              play_type=self.agent_play_type, lr=self.lr, mutation_prob=self.mutation_prob,
+                              mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
         new_copy.agent_play_type.agent.model.load_state_dict(
             self.agent_play_type.agent.model.state_dict())
         new_copy.agent_play_type.agent.memory_deque = self.agent_play_type.agent.memory_deque.copy()
@@ -263,7 +273,7 @@ class Individual:
 
 
 class GeneticStats:
-    def __init__(self, w=350, h=480):
+    def __init__(self, w: int = 350, h: int = 480):
         self.w = w
         self.h = h
         # init display
@@ -291,10 +301,14 @@ class GeneticStats:
 
 
 class GeneticAlgo:
-    def __init__(self, number_of_agents=30, play_type: Play_Type = Play_Type.AI, lr=0.001):
+    def __init__(self, number_of_agents: int, play_type: Play_Type, lr: float, mutation_prob: float, mutation_rate: float, input_size: int, hidden_size: int):
         self.population_size = number_of_agents
         self.play_type = play_type
         self.lr = lr
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.mutation_prob = mutation_prob
+        self.mutation_rate = mutation_rate
         self.display_padding = GAME_DISPLAY_PADDING
 
         length_x = GAME_WIDTH//BLOCK_SIZE
@@ -314,7 +328,7 @@ class GeneticAlgo:
             i) for i in range(self.population_size)]
 
     def new_individual(self, order):
-        return Individual(SnakeGameAI(), order=order, number_of_agents=self.population_size, play_type=self.play_type, lr=self.lr)
+        return Individual(SnakeGameAI(), order=order, number_of_agents=self.population_size, play_type=self.play_type, lr=self.lr, mutation_prob=self.mutation_prob, mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
 
     def new_population(self) -> List[Individual]:
         if len(self.population) == 1:
