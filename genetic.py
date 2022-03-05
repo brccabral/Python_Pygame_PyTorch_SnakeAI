@@ -254,7 +254,6 @@ class Individual:
         self.fitness = pow(len(self.game.snake), 2)
 
     def copy(self, order):
-        print(self)
         new_copy = Individual(SnakeGameAI(), order=order, number_of_agents=self.number_of_agents,
                               play_type=self.play_type, lr=self.lr, mutation_prob=self.mutation_prob,
                               mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
@@ -365,14 +364,15 @@ class GeneticAlgo:
         pop_fitness = [individual.fitness for individual in self.population]
         total_fitness = sum(pop_fitness)
 
-        self.population[0].set_order(0)
+        new_population: List[Individual] = []
+
+        new_population.append(self.population[0].copy(0))
 
         for order in range(1, self.population_size):
-            selected = self.select_individual(
-                pop_fitness, total_fitness)
-            print(f'Selected {self.population[selected]}')
-            self.population[order] = self.population[selected].copy(order)
-            self.population[order].set_order(order)
+            selected = self.select_individual(pop_fitness, total_fitness)
+            new_population.append(self.population[selected].copy(order))
+
+        self.population = new_population
 
     def evolution(self):
         pop_fitness = [individual.fitness for individual in self.population]

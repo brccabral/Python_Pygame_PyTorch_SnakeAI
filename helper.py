@@ -36,7 +36,6 @@ def plot_genetic(best_all_times, best_generation, title='Genetic...'):
              best_all_times[-1], str(best_all_times[-1]))
     plt.text(len(best_generation)-1,
              best_generation[-1], str(best_generation[-1]))
-    plt.annotate(text="LR=0.001", xy=(0.0, 0.0))
     plt.show(block=False)
     plt.pause(.01)
 
