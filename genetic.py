@@ -2,6 +2,7 @@ from abc import ABC, abstractclassmethod
 import datetime
 import math
 import torch
+import numpy as np
 import random
 from typing import List
 import pygame
@@ -449,6 +450,15 @@ class GeneticAlgo:
             f"Generation: {self.generation_count}", True, BLACK)
         self.display_stats.blit(text, [10, 70])
 
+        inarray = np.array(self.individual_highlight.agent_play_type.agent.memory_deque[-1][0]) # 10,1
+        hidden1 = self.individual_highlight.agent_play_type.agent.trainer.model.linear1.weight.detach().numpy() # 16,10
+        hidden2 = self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight.detach().numpy() # 16,16
+        hidden3 = self.individual_highlight.agent_play_type.agent.trainer.model.linear3.weight.detach().numpy() # 4,16
+
+        i1 = np.dot(hidden1, inarray) # 16,1
+        i2 = np.dot(hidden2, i1) #16,1
+        i3 = np.dot(hidden3, i2) #4,1
+
         for i in range(self.input_size):
             color = self.neurons_colors[int(
                 self.individual_highlight.agent_play_type.agent.memory_deque[-1][0][i] > 0)]
@@ -457,22 +467,26 @@ class GeneticAlgo:
             pygame.draw.circle(self.display_stats, color, (10, y), 5)
 
         for i in range(self.hidden_size):
-            color = self.neurons_colors[int(
-                self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight[i][0].item() > 0)]
+            color = self.neurons_colors[int(i1[i] > 0)]
 
             y = 110 + 12*i
             pygame.draw.circle(self.display_stats, color, (50, y), 5)
 
         for i in range(self.hidden_size):
-            color = self.neurons_colors[int(
-                self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight[0][i].item() > 0)]
+            color = self.neurons_colors[int(i2[i] > 0)]
 
             y = 110 + 12*i
             pygame.draw.circle(self.display_stats, color, (90, y), 5)
+
+        for i in range(OUTPUT_SIZE):
+            color = self.neurons_colors[int(i3[i] > 0)]
+
+            y = 110 + 12*i
+            pygame.draw.circle(self.display_stats, color, (130, y), 5)
 
         for i in range(OUTPUT_SIZE):
             color = self.neurons_colors[int(
                 self.individual_highlight.agent_play_type.agent.memory_deque[-1][1][i] > 0)]
 
             y = 110 + 12*i
-            pygame.draw.circle(self.display_stats, color, (130, y), 5)
+            pygame.draw.circle(self.display_stats, color, (170, y), 5)
