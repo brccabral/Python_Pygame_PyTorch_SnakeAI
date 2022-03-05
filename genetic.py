@@ -6,7 +6,7 @@ import random
 from typing import List
 import pygame
 from agent import Agent
-from settings import Play_Type, BLOCK_SIZE, GAME_WIDTH, GAME_HEIGHT, GAME_DISPLAY_PADDING, OUTPUT_SIZE, WHITE, BLACK, FITNESS_TARGET
+from settings import RED, Play_Type, BLOCK_SIZE, GAME_WIDTH, GAME_HEIGHT, GAME_DISPLAY_PADDING, OUTPUT_SIZE, WHITE, BLACK, FITNESS_TARGET
 
 from snake_game import SnakeGameAI
 
@@ -321,6 +321,7 @@ class GeneticAlgo:
         self.best_individual_order: int = 0
         self.generation_count = 0
         self.individual_save: Individual = None
+        self.neurons_colors = [BLACK, RED]
 
     def update_stats(self, individual: Individual):
         if individual.score > self.best_score_all_time:
@@ -447,3 +448,17 @@ class GeneticAlgo:
         text = self.font.render(
             f"Generation: {self.generation_count}", True, BLACK)
         self.display_stats.blit(text, [10, 70])
+
+        for i in range(self.input_size):
+            color = self.neurons_colors[int(
+                self.individual_highlight.agent_play_type.agent.memory_deque[-1][0][i] > 0)]
+
+            y = 110 + 10*i
+            pygame.draw.circle(self.display_stats, color, (10, y), 5)
+
+        for i in range(OUTPUT_SIZE):
+            color = self.neurons_colors[int(
+                self.individual_highlight.agent_play_type.agent.memory_deque[-1][1][i] > 0)]
+
+            y = 110 + 10*i
+            pygame.draw.circle(self.display_stats, color, (150, y), 5)

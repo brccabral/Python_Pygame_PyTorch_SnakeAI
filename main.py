@@ -69,17 +69,17 @@ def main(*args, **kwargs):
                         user_event = event
 
             for individual in genetic_algo.population:
-                if individual.order <= 15:
-                    screen.blit(pygame.transform.scale(
-                        individual.game.display, (individual.display_w, individual.display_h)), (individual.game_x, individual.game_y))
-                else:
+                if individual.order > 15:
                     break
+
+                screen.blit(pygame.transform.scale(
+                    individual.game.display, (individual.display_w, individual.display_h)), (individual.game_x, individual.game_y))
 
             screen.blit(pygame.transform.scale(genetic_algo.display_stats,
                         (genetic_algo.w, genetic_algo.h)), (SCREEN_WIDTH - 450, 0))
 
             screen.blit(pygame.transform.scale(genetic_algo.individual_highlight.game.display,
-                        (400, 240)), (SCREEN_WIDTH - 450, 200))
+                        (400, 240)), (SCREEN_WIDTH - 450, 250))
 
             pygame.display.update()
             clock.tick(CLOCK_SPEED)
