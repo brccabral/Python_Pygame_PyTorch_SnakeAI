@@ -1,3 +1,4 @@
+import copy
 import torch
 import random
 import numpy as np
@@ -48,8 +49,6 @@ class Agent:
         collisions = []
         for c in range(-2, 3):
             for r in range(-2, 3):
-                if r == 0 and c == 0:
-                    continue
                 collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
 
         state = collisions + [
@@ -130,6 +129,7 @@ class Agent:
         new_copy = Agent(self.input_size, self.hidden_size, self.lr)
         new_copy.epsilon = self.epsilon
         new_copy.number_of_games = self.number_of_games
+        new_copy.memory_deque = copy.deepcopy(self.memory_deque)
         new_copy.trainer = self.trainer.copy()
 
         return new_copy
