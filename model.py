@@ -10,11 +10,14 @@ class Linear_QNet(nn.Module):
     def __init__(self, input_size: int, hidden_size: int, output_size: int):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
-        self.linear2 = nn.Linear(hidden_size, output_size)
+        self.linear2 = nn.Linear(hidden_size, hidden_size)
+        self.linear3 = nn.Linear(hidden_size, output_size)
+        self.drop = nn.Dropout(p=0.3)
 
     def forward(self, x: torch.Tensor):
-        x = F.relu(self.linear1(x))
-        x = self.linear2(x)
+        x = F.relu(self.drop(self.linear1(x)))
+        x = F.relu(self.drop(self.linear2(x)))
+        x = self.drop(self.linear3(x))
         return x
 
     def save(self, file_name='model.pth'):

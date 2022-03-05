@@ -47,23 +47,34 @@ class Agent:
 
         # get collisions two steps ahead
         collisions = []
-        for c in range(-1, 2):
-            for r in range(-1, 2):
-                collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
+        # for c in range(-1, 2):
+        #     for r in range(-1, 2):
+        #         collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
+
+        collisions.append(game.is_collision(Point(head.x-1, head.y)))
+        collisions.append(game.is_collision(Point(head.x+1, head.y)))
+        collisions.append(game.is_collision(Point(head.x, head.y-1)))
+        collisions.append(game.is_collision(Point(head.x, head.y+1)))
 
         state = collisions + [
 
-            game.manhattan_distance(Point(head.x+1, head.y)),
-            game.manhattan_distance(Point(head.x-1, head.y)),
-            game.manhattan_distance(Point(head.x, head.y+1)),
-            game.manhattan_distance(Point(head.x, head.y-1)),
+            # game.manhattan_distance(Point(head.x+1, head.y)),
+            # game.manhattan_distance(Point(head.x-1, head.y)),
+            # game.manhattan_distance(Point(head.x, head.y+1)),
+            # game.manhattan_distance(Point(head.x, head.y-1)),
 
             head.x % 2,
             head.y % 2,
 
+            head.x < game.food.x,
+            head.x > game.food.x,
+            head.y < game.food.y,
+            head.y > game.food.y,
+
         ]
 
-        return np.array(state, dtype=int)
+        # return np.array(state, dtype=int)
+        return state
 
     def remember(self, state, action, reward, next_state, game_over):
         # memory_deque calls popleft automatically if size greater than MAX_MEMORY
@@ -81,10 +92,10 @@ class Agent:
             batch_sample = self.memory_deque
 
         states, actions, rewards, next_states, game_overs = zip(*batch_sample)
-        states = torch.tensor(np.array(states), dtype=torch.float)
+        states = torch.tensor(states, dtype=torch.float)
         actions = torch.tensor(actions, dtype=torch.long)
         rewards = torch.tensor(rewards, dtype=torch.float)
-        next_states = torch.tensor(np.array(next_states), dtype=torch.float)
+        next_states = torch.tensor(next_states, dtype=torch.float)
         self.trainer.train_step(states, actions, rewards,
                                 next_states, game_overs)
 
@@ -97,11 +108,11 @@ class Agent:
 
     def get_action(self, state):
         # random moves: tradeoff between exploration vs exploitation
-        self.epsilon = 80 - self.number_of_games
+        self.epsilon = 200 - self.number_of_games
         action = [0 for _ in range(OUTPUT_SIZE)]
         # in the beginning this is true for some time, later self.number_of_games is larger
         # than 80 and this will never get called
-        if random.randint(0, 200) < self.epsilon:
+        if random.randint(0, 50) < self.epsilon:
             move = random.randint(0, OUTPUT_SIZE-1)
             action[move] = 1
         else:
