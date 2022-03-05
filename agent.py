@@ -2,7 +2,7 @@ import torch
 import random
 import numpy as np
 from collections import deque
-from model import Linear_QNet, QTrainer
+from model import QTrainer
 from snake_game import SnakeGameAI, Point
 from helper import plot
 from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
@@ -10,15 +10,21 @@ from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
 
 class Agent:
     def __init__(self, input_size: int, hidden_size: int, lr: float):
+        self.input_size = input_size
+        self.hidden_size = hidden_size
+        self.lr = lr
         self.number_of_games = 0
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate, has to be less than 1, usually 0.8-0.99
         # deque auto removes items if it gets larger than maxlen, popleft()
         self.memory_deque = deque(maxlen=MAX_MEMORY)
 
-        self.model: Linear_QNet = Linear_QNet(
-            input_size, hidden_size, OUTPUT_SIZE)
-        self.trainer: QTrainer = QTrainer(self.model, lr=lr, gamma=self.gamma)
+        self.trainer: QTrainer = QTrainer(
+            lr=lr, gamma=self.gamma, input_size=input_size, hidden_size=hidden_size)
+
+    def __repr__(self):
+        return f'Agent(games:{self.number_of_games}, epsilon:{self.epsilon},' \
+            f' inp:{self.input_size}, hid:{self.hidden_size}, lr:{self.lr})'
 
     def get_state(self, game: SnakeGameAI):
         """From the game, get some parameters and returns a list
@@ -76,10 +82,18 @@ class Agent:
             batch_sample = self.memory_deque
 
         states, actions, rewards, next_states, game_overs = zip(*batch_sample)
+        states = torch.tensor(np.array(states), dtype=torch.float)
+        actions = torch.tensor(actions, dtype=torch.long)
+        rewards = torch.tensor(rewards, dtype=torch.float)
+        next_states = torch.tensor(np.array(next_states), dtype=torch.float)
         self.trainer.train_step(states, actions, rewards,
                                 next_states, game_overs)
 
     def train_short_memory(self, state, action, reward, next_state, game_over):
+        state = torch.tensor(state, dtype=torch.float)
+        action = torch.tensor(action, dtype=torch.long)
+        reward = torch.tensor(reward, dtype=torch.float)
+        next_state = torch.tensor(next_state, dtype=torch.float)
         self.trainer.train_step(state, action, reward, next_state, game_over)
 
     def get_action(self, state):
@@ -94,7 +108,7 @@ class Agent:
         else:
             state0 = torch.tensor(state, dtype=torch.float)
             # prediction is a list of floats
-            prediction = self.model.forward(state0)
+            prediction = self.trainer.model.forward(state0)
             # get the larger number index
             move = torch.argmax(prediction).item()
             # set the index to 1
@@ -103,14 +117,22 @@ class Agent:
         return action
 
     def get_play(self, state):
-        self.model.eval()
+        self.trainer.model.eval()
         action = [0 for _ in range(OUTPUT_SIZE)]
         state0 = torch.tensor(state, dtype=torch.float)
-        prediction = self.model.forward(state0)
+        prediction = self.trainer.model.forward(state0)
         move = torch.argmax(prediction).item()
         action[move] = 1
 
         return action
+
+    def copy(self):
+        new_copy = Agent(self.input_size, self.hidden_size, self.lr)
+        new_copy.epsilon = self.epsilon
+        new_copy.number_of_games = self.number_of_games
+        new_copy.trainer = self.trainer.copy()
+
+        return new_copy
 
 
 def train():
@@ -143,7 +165,7 @@ def train():
             agent.number_of_games += 1
             if score > best_score:
                 best_score = score
-                agent.model.save()
+                agent.trainer.model.save()
 
             print(
                 f'Game {agent.number_of_games} Score {score} Record {best_score}')
@@ -160,7 +182,7 @@ def train():
 
 def main():
     agent = Agent()
-    agent.model.load()
+    agent.trainer.model.load()
     game = SnakeGameAI()
     while True:
         state_old = agent.get_state(game)

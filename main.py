@@ -29,7 +29,7 @@ def main(*args, **kwargs):
         genetic_algo.play_step(user_event)
         # all games have ended, generation is done
         if genetic_algo.total_game_over >= kwargs['number_of_agents']:
-            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
+            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {genetic_algo} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
 
             # with timer('Plot'):
             if kwargs['plot_chart']:
@@ -38,10 +38,10 @@ def main(*args, **kwargs):
                 best_generation.append(
                     genetic_algo.genetic_stats.best_score_generation)
                 plot_genetic(best_all_times, best_generation,
-                             title=genetic_algo.__repr__())
+                             title=genetic_algo)
 
             if genetic_algo.individual_save is not None:
-                genetic_algo.individual_save.agent_play_type.agent.model.save(
+                genetic_algo.individual_save.agent_play_type.agent.trainer.model.save(
                     file_name=f'model_{genetic_algo.individual_save.score}_{genetic_algo.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
 
             if genetic_algo.has_winner():

@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import os
+from settings import OUTPUT_SIZE
 
 
 class Linear_QNet(nn.Module):
@@ -30,19 +31,18 @@ class Linear_QNet(nn.Module):
 
 
 class QTrainer:
-    def __init__(self, model: Linear_QNet, lr: float, gamma: float):
-        self.model = model
+    def __init__(self, lr: float, gamma: float, input_size: int, hidden_size: int):
         self.lr = lr
         self.gamma = gamma
+        self.input_size = input_size
+        self.hidden_size = hidden_size
 
-        self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
+        self.model: Linear_QNet = Linear_QNet(
+            self.input_size, self.hidden_size, OUTPUT_SIZE)
+        self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
 
     def train_step(self, state_old, action, reward, state_new, done):
-        state_old = torch.tensor(state_old, dtype=torch.float)
-        state_new = torch.tensor(state_new, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.long)
-        reward = torch.tensor(reward, dtype=torch.float)
 
         if len(state_old.shape) == 1:
             # received only one state
@@ -72,3 +72,12 @@ class QTrainer:
         loss: torch.Tensor = self.criterion(target, pred_action)
         loss.backward()
         self.optimizer.step()
+
+    def copy(self):
+        new_copy = QTrainer(lr=self.lr, gamma=self.gamma,
+                            input_size=self.input_size, hidden_size=self.hidden_size)
+        new_copy.model.load_state_dict(self.model.state_dict())
+        new_copy.optimizer.load_state_dict(self.optimizer.state_dict())
+        new_copy.criterion.load_state_dict(self.criterion.state_dict())
+
+        return new_copy
