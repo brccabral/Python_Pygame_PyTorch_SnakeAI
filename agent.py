@@ -46,30 +46,30 @@ class Agent:
         head = game.snake[0]
 
         # get collisions two steps ahead
-        collisions = []
+        # collisions = []
         # for c in range(-1, 2):
         #     for r in range(-1, 2):
         #         collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
 
-        collisions.append(game.is_collision(Point(head.x-1, head.y)))
-        collisions.append(game.is_collision(Point(head.x+1, head.y)))
-        collisions.append(game.is_collision(Point(head.x, head.y-1)))
-        collisions.append(game.is_collision(Point(head.x, head.y+1)))
+        # collisions.append(game.is_collision(Point(head.x-1, head.y)))
+        # collisions.append(game.is_collision(Point(head.x+1, head.y)))
+        # collisions.append(game.is_collision(Point(head.x, head.y-1)))
+        # collisions.append(game.is_collision(Point(head.x, head.y+1)))
 
-        state = collisions + [
+        state = [
 
-            # game.manhattan_distance(Point(head.x+1, head.y)),
-            # game.manhattan_distance(Point(head.x-1, head.y)),
-            # game.manhattan_distance(Point(head.x, head.y+1)),
-            # game.manhattan_distance(Point(head.x, head.y-1)),
+            game.food_direction(Point(head.x+1, head.y)),
+            game.food_direction(Point(head.x-1, head.y)),
+            game.food_direction(Point(head.x, head.y+1)),
+            game.food_direction(Point(head.x, head.y-1)),
 
             head.x % 2,
             head.y % 2,
 
-            head.x < game.food.x,
-            head.x > game.food.x,
-            head.y < game.food.y,
-            head.y > game.food.y,
+            # head.x < game.food.x,
+            # head.x > game.food.x,
+            # head.y < game.food.y,
+            # head.y > game.food.y,
 
         ]
 

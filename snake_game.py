@@ -95,6 +95,13 @@ class SnakeGameAI:
 
         return False
 
+    def food_direction(self, pt: Point = None) -> int:
+        if self.is_collision(pt):
+            return -1
+        head_distance = self.manhattan_distance(self.snake[0])
+        point_distance = self.manhattan_distance(pt)
+        return int((head_distance - point_distance)>0)
+
     def manhattan_distance(self, pt: Point = None) -> int:
         return abs(self.food.x - pt.x) + abs(self.food.y - pt.y)
 
