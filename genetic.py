@@ -282,7 +282,7 @@ class Individual:
         self.score = 0
         self.game.reset()
         self.agent_play_type.agent.number_of_games += 1
-        self.agent_play_type.agent.train_long_memory()
+        # self.agent_play_type.agent.train_long_memory()
         self.game_over = False
 
     def update_ui(self):
@@ -450,14 +450,19 @@ class GeneticAlgo:
             f"Generation: {self.generation_count}", True, BLACK)
         self.display_stats.blit(text, [10, 70])
 
-        inarray = np.array(self.individual_highlight.agent_play_type.agent.memory_deque[-1][0]) # 10,1
-        hidden1 = self.individual_highlight.agent_play_type.agent.trainer.model.linear1.weight.detach().numpy() # 16,10
-        hidden2 = self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight.detach().numpy() # 16,16
-        hidden3 = self.individual_highlight.agent_play_type.agent.trainer.model.linear3.weight.detach().numpy() # 4,16
+        # self.update_nerons_ui()
 
-        i1 = np.dot(hidden1, inarray) # 16,1
-        i2 = np.dot(hidden2, i1) #16,1
-        i3 = np.dot(hidden3, i2) #4,1
+    def update_nerons_ui(self):
+
+        inarray = np.array(
+            self.individual_highlight.agent_play_type.agent.memory_deque[-1][0])  # 10,1
+        hidden1 = self.individual_highlight.agent_play_type.agent.trainer.model.linear1.weight.detach().numpy()  # 16,10
+        hidden2 = self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight.detach().numpy()  # 16,16
+        hidden3 = self.individual_highlight.agent_play_type.agent.trainer.model.linear3.weight.detach().numpy()  # 4,16
+
+        i1 = np.dot(hidden1, inarray)  # 16,1
+        i2 = np.dot(hidden2, i1)  # 16,1
+        i3 = np.dot(hidden3, i2)  # 4,1
 
         for i in range(self.input_size):
             color = self.neurons_colors[int(
