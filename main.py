@@ -79,7 +79,7 @@ def main(*args, **kwargs):
                         (genetic_algo.w, genetic_algo.h)), (SCREEN_WIDTH - 450, 0))
 
             screen.blit(pygame.transform.scale(genetic_algo.individual_highlight.game.display,
-                        (400, 240)), (SCREEN_WIDTH - 450, 250))
+                        (400, 240)), (SCREEN_WIDTH - 450, 300))
 
             pygame.display.update()
             clock.tick(CLOCK_SPEED)
