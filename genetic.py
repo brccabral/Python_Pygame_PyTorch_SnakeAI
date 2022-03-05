@@ -456,6 +456,20 @@ class GeneticAlgo:
             y = 110 + 10*i
             pygame.draw.circle(self.display_stats, color, (10, y), 5)
 
+        for i in range(self.hidden_size):
+            color = self.neurons_colors[int(
+                self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight[i][0].item() > 0)]
+
+            y = 110 + 10*i
+            pygame.draw.circle(self.display_stats, color, (40, y), 5)
+
+        for i in range(self.hidden_size):
+            color = self.neurons_colors[int(
+                self.individual_highlight.agent_play_type.agent.trainer.model.linear2.weight[0][i].item() > 0)]
+
+            y = 110 + 10*i
+            pygame.draw.circle(self.display_stats, color, (80, y), 5)
+
         for i in range(OUTPUT_SIZE):
             color = self.neurons_colors[int(
                 self.individual_highlight.agent_play_type.agent.memory_deque[-1][1][i] > 0)]
