@@ -161,3 +161,20 @@ class SnakeGameAI:
         self.count_steps = 0
 
         self.game_over = False
+
+    def print_board(self):
+        rows = []
+        for y in range(GAME_TABLE_ROWS):
+            columns = []
+            for x in range(GAME_TABLE_COLUMNS):
+                pt = Point(x, y)
+                if pt == self.food:
+                    columns.append('F')
+                elif pt == self.snake[0]:
+                    columns.append('H')
+                elif pt in self.snake[1:]:
+                    columns.append('X')
+                else:
+                    columns.append('_')
+            rows.append("|".join(columns))
+        print("\n".join(rows))
