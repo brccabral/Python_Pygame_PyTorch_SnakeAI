@@ -47,20 +47,20 @@ class Agent:
 
         # get collisions two steps ahead
         collisions = []
-        for c in range(-2, 3):
-            for r in range(-2, 3):
+        for c in range(-1, 2):
+            for r in range(-1, 2):
                 collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
 
         state = collisions + [
 
+            game.manhattan_distance(Point(head.x+1, head.y)),
+            game.manhattan_distance(Point(head.x-1, head.y)),
+            game.manhattan_distance(Point(head.x, head.y+1)),
+            game.manhattan_distance(Point(head.x, head.y-1)),
+
             head.x % 2,
             head.y % 2,
 
-            # food location
-            game.food.x < head.x,  # food left
-            game.food.x > head.x,  # food right
-            game.food.y < head.y,  # food up
-            game.food.y > head.y  # food down
         ]
 
         return np.array(state, dtype=int)

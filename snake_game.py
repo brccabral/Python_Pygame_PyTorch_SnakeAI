@@ -95,6 +95,9 @@ class SnakeGameAI:
 
         return False
 
+    def manhattan_distance(self, pt: Point = None) -> int:
+        return abs(self.food.x - pt.x) + abs(self.food.y - pt.y)
+
     def update_ui(self):
         self.display.fill(BLACK)
 

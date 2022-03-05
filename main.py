@@ -95,8 +95,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--lr', type=float, default=0.001, metavar='LR',
                         help='learning rate (default: 0.001)')
-    parser.add_argument('--input_features', type=int, default=31, metavar='IN',
-                        help='input dimension for training (default: 30)')
+    parser.add_argument('--input_features', type=int, default=15, metavar='IN',
+                        help='input dimension for training (default: 15)')
     parser.add_argument('--hidden_dim', type=int, default=256, metavar='H',
                         help='hidden dimension for training (default: 256)')
     parser.add_argument('--number_of_agents', type=int, default=30, metavar='AGENTS',
