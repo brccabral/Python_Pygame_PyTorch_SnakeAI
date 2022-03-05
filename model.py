@@ -41,6 +41,7 @@ class QTrainer:
             self.input_size, self.hidden_size, OUTPUT_SIZE)
         self.optimizer = optim.Adam(self.model.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
+        self.loss: torch.Tensor = None
 
     def train_step(self, state_old, action, reward, state_new, done):
 
@@ -69,8 +70,8 @@ class QTrainer:
             target[index][torch.argmax(action).item()] = Q_new
 
         self.optimizer.zero_grad()
-        loss: torch.Tensor = self.criterion(target, pred_action)
-        loss.backward()
+        self.loss: torch.Tensor = self.criterion(target, pred_action)
+        self.loss.backward()
         self.optimizer.step()
 
     def copy(self):
@@ -79,5 +80,9 @@ class QTrainer:
         new_copy.model.load_state_dict(self.model.state_dict())
         new_copy.optimizer.load_state_dict(self.optimizer.state_dict())
         new_copy.criterion.load_state_dict(self.criterion.state_dict())
+        new_copy.loss = self.loss.clone()
 
         return new_copy
+
+    def __repr__(self):
+        return f'QTrainer(l1:{self.model.linear1.weight.data} l2:{self.model.linear2.weight.data})'
