@@ -291,36 +291,9 @@ class Individual:
         return f'Order {self.order} Score {self.score} {self.agent_play_type}'
 
 
-class GeneticStats:
-    def __init__(self, w: int = 350, h: int = 480):
-        self.w = w
-        self.h = h
-        # init display
-        self.display = pygame.Surface((self.w, self.h))
-        self.font = pygame.font.Font('arial.ttf', 25)
-        self.best_score_all_time = 0
-        self.best_score_generation = 0
-        self.best_individual_order: int = 0
-        self.generation_count = 0
-
-    def update_ui(self):
-        self.display.fill(WHITE)
-        text = self.font.render(
-            f"Best Score All Time: {self.best_score_all_time}", True, BLACK)
-        self.display.blit(text, [10, 10])
-        text = self.font.render(
-            f"Best Score Generation: {self.best_score_generation}", True, BLACK)
-        self.display.blit(text, [10, 30])
-        text = self.font.render(
-            f"Best Individual: {self.best_individual_order}", True, BLACK)
-        self.display.blit(text, [10, 50])
-        text = self.font.render(
-            f"Generation: {self.generation_count}", True, BLACK)
-        self.display.blit(text, [10, 70])
-
-
 class GeneticAlgo:
-    def __init__(self, number_of_agents: int, play_type: Play_Type, lr: float, mutation_prob: float, mutation_rate: float, input_size: int, hidden_size: int):
+    def __init__(self, number_of_agents: int, play_type: Play_Type, lr: float, mutation_prob: float,
+                 mutation_rate: float, input_size: int, hidden_size: int, display_stats_w: int = 350, display_stats_h: int = 480):
         self.population_size = number_of_agents
         self.play_type = play_type
         self.lr = lr
@@ -334,12 +307,30 @@ class GeneticAlgo:
 
         self.total_board_size = length_x*length_y
 
+        self.population: List[Individual] = None
         self.generate_population()
-        self.individual_highlight: Individual = self.population[0]
-        self.individual_save: Individual = None
         self.total_game_over = 0
 
-        self.genetic_stats = GeneticStats()
+        # init display stats
+        self.w = display_stats_w
+        self.h = display_stats_h
+        self.display_stats = pygame.Surface((self.w, self.h))
+        self.font = pygame.font.Font('arial.ttf', 25)
+        self.best_score_all_time = 0
+        self.best_score_generation = 0
+        self.best_individual_order: int = 0
+        self.generation_count = 0
+        self.individual_save: Individual = None
+
+    def update_stats(self, individual: Individual):
+        if individual.score > self.best_score_all_time:
+            self.best_score_all_time = individual.score
+            self.individual_save = individual
+
+        if individual.score > self.best_score_generation:
+            self.individual_highlight = individual
+            self.best_score_generation = individual.score
+            self.best_individual_order = individual.order
 
     def __repr__(self):
         return f'Genetic Pop={self.population_size} LR={self.lr} Mut_Prob={self.mutation_prob}, Mut_Rate={self.mutation_rate}'
@@ -347,6 +338,7 @@ class GeneticAlgo:
     def generate_population(self):
         self.population = [self.new_individual(
             i) for i in range(self.population_size)]
+        self.individual_highlight = self.population[0]
 
     def new_individual(self, order):
         return Individual(SnakeGameAI(), order=order, number_of_agents=self.population_size, play_type=self.play_type, lr=self.lr, mutation_prob=self.mutation_prob, mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
@@ -358,7 +350,7 @@ class GeneticAlgo:
         # self.evolution(population)
         self.natural_selection()
         self.individual_highlight = self.population[0]
-        self.genetic_stats.best_individual_order = 0
+        self.individual_save = None
 
     def natural_selection(self):
         pop_fitness = [individual.fitness for individual in self.population]
@@ -411,24 +403,16 @@ class GeneticAlgo:
             if self.individual_highlight.game_over:
                 self.individual_highlight = individual
             individual.play_step(user_event)
-
-            if individual.score > self.genetic_stats.best_score_all_time:
-                self.genetic_stats.best_score_all_time = individual.score
-                self.individual_save = individual
-
-            if individual.score > self.genetic_stats.best_score_generation:
-                self.individual_highlight = individual
-                self.genetic_stats.best_score_generation = individual.score
-                self.genetic_stats.best_individual_order = individual.order
+            self.update_stats(individual)
 
     def has_winner(self):
         self.population = sorted(
             self.population, key=lambda individual: individual.fitness, reverse=True)
         if self.population[0].fitness >= FITNESS_TARGET:
             self.population[0].agent_play_type.agent.trainer.model.save(
-                file_name=f'model_winner_{self.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
+                file_name=f'model_winner_{self.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
             print(
-                f'Generation {self.genetic_stats.generation_count} has a winner ID {self.population[0].order}')
+                f'Generation {self.generation_count} has a winner ID {self.population[0].order}')
 
     def reset(self):
         self.total_game_over = 0
@@ -436,17 +420,30 @@ class GeneticAlgo:
         for individual in self.population:
             individual.reset()
 
-        self.genetic_stats.best_score_generation = 0
-        self.genetic_stats.generation_count += 1
+        self.best_score_generation = 0
+        self.generation_count += 1
 
         self.new_population()
 
     def update_ui(self):
-        self.genetic_stats.update_ui()
 
         for individual in self.population:
-            if individual.order <= 15:
-                individual.update_ui()
-            else:
+            if individual.order > 15:
                 break
+            individual.update_ui()
+
         self.individual_highlight.update_ui()
+
+        self.display_stats.fill(WHITE)
+        text = self.font.render(
+            f"Best Score All Time: {self.best_score_all_time}", True, BLACK)
+        self.display_stats.blit(text, [10, 10])
+        text = self.font.render(
+            f"Best Score Generation: {self.best_score_generation}", True, BLACK)
+        self.display_stats.blit(text, [10, 30])
+        text = self.font.render(
+            f"Best Individual: {self.best_individual_order}", True, BLACK)
+        self.display_stats.blit(text, [10, 50])
+        text = self.font.render(
+            f"Generation: {self.generation_count}", True, BLACK)
+        self.display_stats.blit(text, [10, 70])

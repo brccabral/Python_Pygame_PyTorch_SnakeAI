@@ -29,25 +29,25 @@ def main(*args, **kwargs):
         genetic_algo.play_step(user_event)
         # all games have ended, generation is done
         if genetic_algo.total_game_over >= kwargs['number_of_agents']:
-            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {genetic_algo} Generation {genetic_algo.genetic_stats.generation_count} Best All {genetic_algo.genetic_stats.best_score_all_time} Best Gen {genetic_algo.genetic_stats.best_score_generation}')
+            print(f'{datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")} {genetic_algo} Generation {genetic_algo.generation_count} Best All {genetic_algo.best_score_all_time} Best Gen {genetic_algo.best_score_generation}')
 
             # with timer('Plot'):
             if kwargs['plot_chart']:
                 best_all_times.append(
-                    genetic_algo.genetic_stats.best_score_all_time)
+                    genetic_algo.best_score_all_time)
                 best_generation.append(
-                    genetic_algo.genetic_stats.best_score_generation)
+                    genetic_algo.best_score_generation)
                 plot_genetic(best_all_times, best_generation,
                              title=genetic_algo)
 
             if genetic_algo.individual_save is not None:
                 genetic_algo.individual_save.agent_play_type.agent.trainer.model.save(
-                    file_name=f'model_{genetic_algo.individual_save.score}_{genetic_algo.genetic_stats.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
+                    file_name=f'model_{genetic_algo.individual_save.score}_{genetic_algo.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
 
             if genetic_algo.has_winner():
                 break
 
-            if genetic_algo.genetic_stats.generation_count > MAX_GENERATIONS:
+            if genetic_algo.generation_count > MAX_GENERATIONS:
                 print(f'Max generations reached {MAX_GENERATIONS}')
                 break
 
@@ -75,8 +75,8 @@ def main(*args, **kwargs):
                 else:
                     break
 
-            screen.blit(pygame.transform.scale(genetic_algo.genetic_stats.display,
-                        (genetic_algo.genetic_stats.w, genetic_algo.genetic_stats.h)), (SCREEN_WIDTH - 450, 0))
+            screen.blit(pygame.transform.scale(genetic_algo.display_stats,
+                        (genetic_algo.w, genetic_algo.h)), (SCREEN_WIDTH - 450, 0))
 
             screen.blit(pygame.transform.scale(genetic_algo.individual_highlight.game.display,
                         (400, 240)), (SCREEN_WIDTH - 450, 200))
@@ -85,7 +85,7 @@ def main(*args, **kwargs):
             clock.tick(CLOCK_SPEED)
 
     print(
-        f'best_score_all_time {genetic_algo.genetic_stats.best_score_all_time} generation_count {genetic_algo.genetic_stats.generation_count}')
+        f'best_score_all_time {genetic_algo.best_score_all_time} generation_count {genetic_algo.generation_count}')
 
     pygame.quit()
 
