@@ -47,6 +47,10 @@ class QTrainer:
         self.loss: torch.Tensor = None
 
     def train_step(self, state_old, action, reward, state_new, done):
+        state_old = torch.tensor(state_old, dtype=torch.float)
+        action = torch.tensor(action, dtype=torch.long)
+        reward = torch.tensor(reward, dtype=torch.float)
+        state_new = torch.tensor(state_new, dtype=torch.float)
 
         if len(state_old.shape) == 1:
             # received only one state

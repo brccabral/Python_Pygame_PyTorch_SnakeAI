@@ -92,18 +92,10 @@ class Agent:
             batch_sample = self.memory_deque
 
         states, actions, rewards, next_states, game_overs = zip(*batch_sample)
-        states = torch.tensor(states, dtype=torch.float)
-        actions = torch.tensor(actions, dtype=torch.long)
-        rewards = torch.tensor(rewards, dtype=torch.float)
-        next_states = torch.tensor(next_states, dtype=torch.float)
         self.trainer.train_step(states, actions, rewards,
                                 next_states, game_overs)
 
     def train_short_memory(self, state, action, reward, next_state, game_over):
-        state = torch.tensor(state, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.long)
-        reward = torch.tensor(reward, dtype=torch.float)
-        next_state = torch.tensor(next_state, dtype=torch.float)
         self.trainer.train_step(state, action, reward, next_state, game_over)
 
     def get_action(self, state):
