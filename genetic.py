@@ -282,7 +282,7 @@ class Individual:
         self.score = 0
         self.game.reset()
         self.agent_play_type.agent.number_of_games += 1
-        # self.agent_play_type.agent.train_long_memory()
+        self.agent_play_type.agent.train_long_memory()
         self.game_over = False
 
     def update_ui(self):
