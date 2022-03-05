@@ -67,6 +67,7 @@ class SnakeGameAI:
             if self.is_collision() or self.count_steps > 2*(GAME_TABLE_ROWS*GAME_TABLE_COLUMNS):
                 self.game_over = True
                 reward = -10
+                self.snake.pop()
                 return reward, self.game_over, self.score
 
             # 4. place new food or just move
