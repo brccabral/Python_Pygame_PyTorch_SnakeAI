@@ -39,5 +39,5 @@ class Play_Type(Enum):
 
 # agent training
 MAX_MEMORY = 100_000  # how many previous moves will be stored in memory_deque
-BATCH_SIZE = 5000
+BATCH_SIZE = 1_200
 OUTPUT_SIZE = 4  # has to be the number of possible actions, Agent.get_action
