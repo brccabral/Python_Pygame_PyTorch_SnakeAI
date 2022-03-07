@@ -335,7 +335,7 @@ class GeneticAlgo:
             self.best_individual_order = individual.order
 
     def __repr__(self):
-        return f'Genetic Pop={self.population_size} LR={self.lr} Mut_Prob={self.mutation_prob}, Mut_Rate={self.mutation_rate}'
+        return f'Genetic Pop={self.population_size} LR={self.lr} Hidden={self.hidden_size}'
 
     def generate_population(self):
         self.population = [self.new_individual(
