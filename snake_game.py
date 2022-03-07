@@ -100,7 +100,7 @@ class SnakeGameAI:
             return -1
         head_distance = self.manhattan_distance(self.snake[0])
         point_distance = self.manhattan_distance(pt)
-        return int((head_distance - point_distance)>0)
+        return int((head_distance - point_distance) > 0)
 
     def manhattan_distance(self, pt: Point = None) -> int:
         return abs(self.food.x - pt.x) + abs(self.food.y - pt.y)
@@ -116,7 +116,7 @@ class SnakeGameAI:
             pygame.draw.rect(self.display, BLUE1, pygame.Rect(
                 pt.x*BLOCK_SIZE, pt.y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
             pygame.draw.rect(self.display, BLUE2,
-                             pygame.Rect(self.head.x*BLOCK_SIZE+BLOCK_DRAW_OFFSET, self.head.y*BLOCK_SIZE+BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, BLOCK_SIZE_OFFSET))
+                             pygame.Rect(pt.x*BLOCK_SIZE+BLOCK_DRAW_OFFSET, pt.y*BLOCK_SIZE+BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, BLOCK_SIZE_OFFSET))
 
         pygame.draw.rect(self.display, RED, pygame.Rect(
             self.food.x*BLOCK_SIZE, self.food.y*BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE))
@@ -169,7 +169,7 @@ class SnakeGameAI:
 
         self.game_over = False
 
-    def print_board(self):
+    def get_board(self):
         rows = []
         for y in range(GAME_TABLE_ROWS):
             columns = []
@@ -184,4 +184,4 @@ class SnakeGameAI:
                 else:
                     columns.append('_')
             rows.append("|".join(columns))
-        print("\n".join(rows))
+        return "\n".join(rows)

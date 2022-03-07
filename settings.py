@@ -13,7 +13,7 @@ RED = (200, 0, 0)
 BLUE1 = (0, 0, 255)
 BLUE2 = (0, 100, 255)
 GREEN1 = (0, 255, 0)
-GREEN2 = (0, 255, 100)
+GREEN2 = (0, 164, 0)
 BLACK = (0, 0, 0)
 
 # game display
