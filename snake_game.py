@@ -190,6 +190,8 @@ class SnakeGameAI:
             if snake_index + cost > len(self.snake):
                 return cost
             return -1
+        if point == self.food:
+            cost += 1
         return cost
 
     def traverse_cost(self, target_point: Point, previous_point: Point, from_direction: Direction):
