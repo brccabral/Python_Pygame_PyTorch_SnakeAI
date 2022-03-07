@@ -58,65 +58,57 @@ class Node:
             self.next_down = -1
             self.next_up = -1
 
-        self.next_attempt: Direction = None
-
     def is_complete(self):
         return (self.next_right is not None and self.next_left is not None
                 and self.next_down is not None and self.next_up is not None)
 
     def get_next_attempt(self, game: "SnakeGameAI"):
         food_direction = game.food_direction(self.point)
-        next_attempt = None
+
         if food_direction.x < 0:
             if self.next_left is None:
-                next_attempt = Direction.LEFT
-            elif self.next_right is None:
-                next_attempt = Direction.RIGHT
+                return Direction.LEFT
         elif food_direction.x > 0:
             if self.next_right is None:
-                next_attempt = Direction.RIGHT
-            elif self.next_left is None:
-                next_attempt = Direction.LEFT
+                return Direction.RIGHT
 
         if food_direction.y < 0:
             if self.next_up is None:
-                next_attempt = Direction.UP
-            elif self.next_down is None:
-                next_attempt = Direction.DOWN
+                return Direction.UP
 
         if self.next_down is None:
-            next_attempt = Direction.DOWN
+            return Direction.DOWN
         elif self.next_up is None:
-            next_attempt = Direction.UP
+            return Direction.UP
         elif self.next_right is None:
-            next_attempt = Direction.RIGHT
+            return Direction.RIGHT
         elif self.next_left is None:
-            next_attempt = Direction.LEFT
+            return Direction.LEFT
 
-        self.next_attempt = next_attempt
+        return None
 
     def get_next(self, game: "SnakeGameAI"):
-        self.get_next_attempt(game)
+        next_attempt = self.get_next_attempt(game)
 
-        if self.next_attempt == Direction.RIGHT:
+        if next_attempt == Direction.RIGHT:
             new_node = Node(Point(self.point.x+1, self.point.y),
                             self, Direction.RIGHT, game)
             if new_node.cost < 0:
                 self.next_right = -1
                 return self
-        elif self.next_attempt == Direction.LEFT:
+        elif next_attempt == Direction.LEFT:
             new_node = Node(Point(self.point.x-1, self.point.y),
                             self, Direction.LEFT, game)
             if new_node.cost < 0:
                 self.next_left = -1
                 return self
-        elif self.next_attempt == Direction.DOWN:
+        elif next_attempt == Direction.DOWN:
             new_node = Node(Point(self.point.x, self.point.y+1),
                             self, Direction.DOWN, game)
             if new_node.cost < 0:
                 self.next_down = -1
                 return self
-        elif self.next_attempt == Direction.UP:
+        elif next_attempt == Direction.UP:
             new_node = Node(Point(self.point.x, self.point.y-1),
                             self, Direction.UP, game)
             if new_node.cost < 0:
@@ -243,10 +235,6 @@ class SnakeGameAI:
         return cost
 
     def traverse_cost(self, target_point: Point, previous_point: Point, from_direction: Direction):
-        # step_cost = self.step_cost(
-        #     PointCost(target_point.x, target_point.y, 1))
-        # if step_cost < 0:
-        #     return -1
         step_cost = -1
         previous_node = Node(previous_point, None, None, self)
         node = Node(target_point, previous_node, from_direction, self)
