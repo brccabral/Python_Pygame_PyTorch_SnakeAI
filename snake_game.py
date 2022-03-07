@@ -1,9 +1,35 @@
 import pygame
 import random
-from collections import namedtuple
 from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, GREEN1, GREEN2, BLACK, BLUE1, BLUE2, BLOCK_SIZE, BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, WHITE, RED
 
-Point = namedtuple('Point', 'x, y')
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return f"Point(x:{self.x}, y:{self.y})"
+
+    def __add__(self, other: "Point"):
+        if type(other) != Point:
+            return False
+        return Point(self.x+other.x, self.y+other.y)
+
+    def __sub__(self, other: "Point"):
+        if type(other) != Point:
+            return False
+        return Point(self.x-other.x, self.y-other.y)
+
+    def __eq__(self, other: "Point"):
+        if type(other) != Point:
+            return False
+        return self.x == other.x and self.y == other.y
+
+    def distance(self, other: "Point") -> int:
+        if type(other) != Point:
+            return False
+        return abs(self.x-other.x) + abs(self.y-other.y)
 
 
 class Direction:
@@ -91,25 +117,25 @@ class Node:
         next_attempt = self.get_next_attempt(game)
 
         if next_attempt == Direction.RIGHT:
-            new_node = Node(Point(self.point.x+1, self.point.y),
+            new_node = Node(self.point+Direction.RIGHT,
                             self, Direction.RIGHT, game)
             if new_node.cost < 0:
                 self.next_right = -1
                 return self
         elif next_attempt == Direction.LEFT:
-            new_node = Node(Point(self.point.x-1, self.point.y),
+            new_node = Node(self.point+Direction.LEFT,
                             self, Direction.LEFT, game)
             if new_node.cost < 0:
                 self.next_left = -1
                 return self
         elif next_attempt == Direction.DOWN:
-            new_node = Node(Point(self.point.x, self.point.y+1),
+            new_node = Node(self.point+Direction.DOWN,
                             self, Direction.DOWN, game)
             if new_node.cost < 0:
                 self.next_down = -1
                 return self
         elif next_attempt == Direction.UP:
-            new_node = Node(Point(self.point.x, self.point.y-1),
+            new_node = Node(self.point+Direction.UP,
                             self, Direction.UP, game)
             if new_node.cost < 0:
                 self.next_up = -1
@@ -235,6 +261,8 @@ class SnakeGameAI:
         return cost
 
     def traverse_cost(self, target_point: Point, previous_point: Point, from_direction: Direction):
+        if target_point == self.food:
+            return 1
         step_cost = -1
         previous_node = Node(previous_point, None, None, self)
         node = Node(target_point, previous_node, from_direction, self)
