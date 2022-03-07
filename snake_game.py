@@ -31,6 +31,77 @@ class Direction:
             return current_direction
 
 
+class Node:
+    def __init__(self, point: Point, previous: "Node", from_direction: Direction, game: "SnakeGameAI"):
+        self.previous = previous
+        self.point = point
+        self.cost = 0
+        self.next_right = None
+        self.next_left = None
+        self.next_down = None
+        self.next_up = None
+
+        if from_direction == Direction.RIGHT:
+            self.next_left = previous
+        elif from_direction == Direction.LEFT:
+            self.next_right = previous
+        elif from_direction == Direction.UP:
+            self.next_down = previous
+        elif from_direction == Direction.DOWN:
+            self.next_up = previous
+
+        self.update_cost(game)
+
+        if self.cost < 0:
+            self.next_right = -1
+            self.next_left = -1
+            self.next_down = -1
+            self.next_up = -1
+
+    def is_complete(self):
+        return (self.next_right is not None and self.next_left is not None
+                and self.next_down is not None and self.next_up is not None)
+
+    def get_next(self, game: "SnakeGameAI"):
+        if self.next_right is None:
+            new_node = Node(Point(self.point.x+1, self.point.y),
+                            self, Direction.RIGHT, game)
+            if new_node.cost < 0:
+                self.next_right = -1
+                return self
+        elif self.next_left is None:
+            new_node = Node(Point(self.point.x-1, self.point.y),
+                            self, Direction.LEFT, game)
+            if new_node.cost < 0:
+                self.next_left = -1
+                return self
+        elif self.next_down is None:
+            new_node = Node(Point(self.point.x, self.point.y+1),
+                            self, Direction.DOWN, game)
+            if new_node.cost < 0:
+                self.next_down = -1
+                return self
+        elif self.next_up is None:
+            new_node = Node(Point(self.point.x, self.point.y-1),
+                            self, Direction.UP, game)
+            if new_node.cost < 0:
+                self.next_up = -1
+                return self
+        else:
+            new_node = self.previous
+        return new_node
+
+    def update_cost(self, game: "SnakeGameAI"):
+        if self.previous is not None:
+            next_cost = self.previous.cost + 1
+        else:
+            next_cost = 0
+        self.cost = game.step_cost(self.point, next_cost)
+
+    def __repr__(self):
+        return f"Node({self.point}, cost:{self.cost}, previous:{self.previous.point})"
+
+
 class SnakeGameAI:
 
     def __init__(self):
@@ -87,7 +158,7 @@ class SnakeGameAI:
             pt = self.head
 
         # hits boundary
-        if pt.x > GAME_TABLE_COLUMNS-1 or pt.x < 0 or pt.y > GAME_TABLE_ROWS-1 or pt.y < 0:
+        if self.is_out_of_board(pt):
             return True
         # hits itself
         if pt in self.snake[1:]:
@@ -104,6 +175,42 @@ class SnakeGameAI:
 
     def manhattan_distance(self, pt: Point = None) -> int:
         return abs(self.food.x - pt.x) + abs(self.food.y - pt.y)
+
+    def is_out_of_board(self, pt: Point):
+        if pt.x < 0 or pt.y < 0 or pt.x > GAME_TABLE_COLUMNS-1 or pt.y > GAME_TABLE_ROWS-1:
+            return True
+        return False
+
+    def step_cost(self, pt: Point, cost: int):
+        point = Point(pt.x, pt.y)
+        if self.is_out_of_board(point):
+            return -1
+        if point in self.snake:
+            snake_index = self.snake.index(point)
+            if snake_index + cost > len(self.snake):
+                return cost
+            return -1
+        return cost
+
+    def traverse_cost(self, target_point: Point, previous_point: Point, from_direction: Direction):
+        # step_cost = self.step_cost(
+        #     PointCost(target_point.x, target_point.y, 1))
+        # if step_cost < 0:
+        #     return -1
+        step_cost = -1
+        previous_node = Node(previous_point, None, None, self)
+        node = Node(target_point, previous_node, from_direction, self)
+        while not node.is_complete():
+            node = node.get_next(self)
+            if node.point == target_point and node.is_complete():
+                return step_cost
+            # node.update_cost(self)
+            step_cost = node.cost
+            if step_cost >= len(self.snake):
+                break
+        if step_cost < 0:
+            return step_cost
+        return step_cost/len(self.snake)
 
     def update_ui(self):
         self.display.fill(BLACK)

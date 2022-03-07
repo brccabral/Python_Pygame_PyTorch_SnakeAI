@@ -4,7 +4,7 @@ import random
 import numpy as np
 from collections import deque
 from model import QTrainer
-from snake_game import SnakeGameAI, Point
+from snake_game import Direction, SnakeGameAI, Point
 from helper import plot
 from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
 
@@ -45,18 +45,20 @@ class Agent:
         """
         head = game.snake[0]
 
-        # get collisions two steps ahead
-        # collisions = []
-        # for c in range(-1, 2):
-        #     for r in range(-1, 2):
-        #         collisions.append(game.is_collision(Point(head.x-c, head.y-r)))
-
-        # collisions.append(game.is_collision(Point(head.x-1, head.y)))
-        # collisions.append(game.is_collision(Point(head.x+1, head.y)))
-        # collisions.append(game.is_collision(Point(head.x, head.y-1)))
-        # collisions.append(game.is_collision(Point(head.x, head.y+1)))
+        point_cost_right = game.traverse_cost(
+            Point(head.x+1, head.y), head, Direction.RIGHT)
+        point_cost_left = game.traverse_cost(
+            Point(head.x-1, head.y), head, Direction.LEFT)
+        point_cost_up = game.traverse_cost(
+            Point(head.x, head.y-1), head, Direction.UP)
+        point_cost_down = game.traverse_cost(
+            Point(head.x, head.y+1), head, Direction.DOWN)
 
         state = [
+            point_cost_right,
+            point_cost_left,
+            point_cost_up,
+            point_cost_down,
 
             game.food_direction(Point(head.x+1, head.y)),
             game.food_direction(Point(head.x-1, head.y)),
@@ -65,11 +67,6 @@ class Agent:
 
             head.x % 2,
             head.y % 2,
-
-            # head.x < game.food.x,
-            # head.x > game.food.x,
-            # head.y < game.food.y,
-            # head.y > game.food.y,
 
         ]
 
