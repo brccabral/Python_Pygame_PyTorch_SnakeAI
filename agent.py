@@ -60,10 +60,10 @@ class Agent:
             point_cost_up,
             point_cost_down,
 
-            game.food_direction(Point(head.x+1, head.y)),
-            game.food_direction(Point(head.x-1, head.y)),
-            game.food_direction(Point(head.x, head.y+1)),
-            game.food_direction(Point(head.x, head.y-1)),
+            game.food_distance(Point(head.x+1, head.y)),
+            game.food_distance(Point(head.x-1, head.y)),
+            game.food_distance(Point(head.x, head.y+1)),
+            game.food_distance(Point(head.x, head.y-1)),
 
             head.x % 2,
             head.y % 2,
