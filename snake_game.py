@@ -243,11 +243,11 @@ class SnakeGameAI:
             if node.point == target_point and node.is_complete():
                 return step_cost
             step_cost = node.cost
-            if step_cost >= len(self.snake):
+            if node.point == self.food:
                 break
         if step_cost < 0:
             return step_cost
-        return step_cost/len(self.snake)
+        return 1-step_cost/(GAME_TABLE_COLUMNS+GAME_TABLE_ROWS)
 
     def update_ui(self):
         self.display.fill(BLACK)
