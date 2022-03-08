@@ -50,7 +50,14 @@ class QTrainer:
         self.criterion = nn.MSELoss()
         self.loss: torch.Tensor = None
 
+    def get_prediction(self, state):
+        state = torch.tensor(state, dtype=torch.float)
+        self.model.eval()
+        return self.model(state)
+
     def train_step(self, state_old, action, reward, state_new, done):
+        self.model.train()
+
         state_old = torch.tensor(state_old, dtype=torch.float)
         action = torch.tensor(action, dtype=torch.long)
         reward = torch.tensor(reward, dtype=torch.float)
