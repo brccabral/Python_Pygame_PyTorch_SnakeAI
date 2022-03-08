@@ -1,6 +1,7 @@
 import pygame
 import random
 from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, GREEN1, GREEN2, BLACK, BLUE1, BLUE2, BLOCK_SIZE, BLOCK_DRAW_OFFSET, BLOCK_SIZE_OFFSET, WHITE, RED
+from collections import deque
 
 
 class Point:
@@ -161,6 +162,7 @@ class SnakeGameAI:
         # init display
         self.display = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
         self.font = pygame.font.Font('arial.ttf', 25)
+        self.snake = deque(maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
 
         self.reset()
 
