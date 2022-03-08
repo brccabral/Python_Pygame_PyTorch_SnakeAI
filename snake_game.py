@@ -188,7 +188,7 @@ class SnakeGameAI:
             self._move(action)  # update the head
 
             # 3. check if game over
-            if self.is_collision() or self.count_steps > 2*(GAME_TABLE_ROWS*GAME_TABLE_COLUMNS):
+            if self.is_collision() or self.count_steps > min(2*(GAME_TABLE_ROWS*GAME_TABLE_COLUMNS), 100*len(self.snake)):
                 self.game_over = True
                 reward = -10
                 self.snake.pop()
@@ -261,8 +261,7 @@ class SnakeGameAI:
         return cost
 
     def traverse_cost(self, target_point: Point, previous_point: Point, from_direction: Direction):
-        if target_point == self.food:
-            return 1
+        # check if snake is alive if she follows target_point
         step_cost = -1
         previous_node = Node(previous_point, None, None, self)
         node = Node(target_point, previous_node, from_direction, self)
@@ -271,11 +270,11 @@ class SnakeGameAI:
             if node.point == target_point and node.is_complete():
                 return step_cost
             step_cost = node.cost
-            if node.point == self.food:
+            if step_cost > len(self.snake):
                 break
         if step_cost < 0:
             return step_cost
-        return 1-step_cost/(GAME_TABLE_COLUMNS+GAME_TABLE_ROWS)
+        return step_cost/len(self.snake)
 
     def update_ui(self):
         self.display.fill(BLACK)
