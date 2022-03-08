@@ -1,7 +1,6 @@
 import copy
 import torch
 import random
-import numpy as np
 from collections import deque
 from model import QTrainer
 from snake_game import Direction, SnakeGameAI, Point
@@ -45,30 +44,46 @@ class Agent:
         """
         head = game.snake[0]
 
+        right = head+Direction.RIGHT
+        left = head+Direction.LEFT
+        down = head+Direction.DOWN
+        up = head+Direction.UP
+
         point_cost_right = game.traverse_cost(
-            Point(head.x+1, head.y), head, Direction.RIGHT)
+            right, head, Direction.RIGHT)
         point_cost_left = game.traverse_cost(
-            Point(head.x-1, head.y), head, Direction.LEFT)
+            left, head, Direction.LEFT)
         point_cost_up = game.traverse_cost(
-            Point(head.x, head.y-1), head, Direction.UP)
+            up, head, Direction.UP)
         point_cost_down = game.traverse_cost(
-            Point(head.x, head.y+1), head, Direction.DOWN)
+            down, head, Direction.DOWN)
 
-        state = [
-            point_cost_right,
-            point_cost_left,
-            point_cost_up,
-            point_cost_down,
+        costs = [point_cost_down, point_cost_left,
+                 point_cost_right, point_cost_up]
+        max_cost = max(costs)
+        directions_costs = [-1, -1, -1, -1]
+        directions_costs[costs.index(max_cost)] = 1
 
-            game.food_distance(Point(head.x+1, head.y)),
-            game.food_distance(Point(head.x-1, head.y)),
-            game.food_distance(Point(head.x, head.y+1)),
-            game.food_distance(Point(head.x, head.y-1)),
+        collisions = [-1 if game.is_collision(down) else 1,
+                      -1 if game.is_collision(left) else 1,
+                      -1 if game.is_collision(right) else 1,
+                      -1 if game.is_collision(up) else 1]
 
-            head.x % 2,
-            head.y % 2,
+        moves = [-1, -1, -1, -1]
+        if head.x % 2:
+            moves[0] = 1
+        else:
+            moves[1] = 1
 
-        ]
+        if head.y % 2:
+            moves[2] = 1
+        else:
+            moves[3] = 1
+
+        food_direction = game.food_direction(head)
+        food_directions = [food_direction.x, food_direction.y]
+
+        state = costs + collisions + moves + food_directions
 
         # return np.array(state, dtype=int)
         return state
@@ -105,9 +120,8 @@ class Agent:
             move = random.randint(0, OUTPUT_SIZE-1)
             action[move] = 1
         else:
-            state0 = torch.tensor(state, dtype=torch.float)
             # prediction is a list of floats
-            prediction = self.trainer.model.forward(state0)
+            prediction = self.trainer.get_prediction(state)
             # get the larger number index
             move = torch.argmax(prediction).item()
             # set the index to 1
