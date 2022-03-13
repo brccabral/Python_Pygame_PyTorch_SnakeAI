@@ -107,12 +107,12 @@ class AI_Play_Type(Agent_Play_Type):
     def __repr__(self):
         return f'AI({self.agent}, mut_prob:{self.mutation_probability}, mut_rate:{self.mutation_rate})'
 
-    def get_action(self, state: List = None):
-        return self.agent.get_action(state)
+    def get_action(self, state: List[int], game):
+        return self.agent.get_action(state, game)
 
     def play_step(self, game: SnakeGameAI, event: pygame.event.Event = None):
         state_old = self.agent.get_state(game)
-        action = self.get_action(state_old)
+        action = self.get_action(state_old, game)
         reward, game_over, score = game.play_step(action)
         self.train(game, state_old, action, reward, game_over)
         return reward, game_over, score

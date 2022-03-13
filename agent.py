@@ -5,7 +5,7 @@ from collections import deque
 from model import QTrainer
 from snake_game import Direction, SnakeGameAI, Point
 from helper import plot
-from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
+from settings import GAME_TABLE_COLUMNS, GAME_TABLE_ROWS, MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
 
 
 class Agent:
@@ -49,39 +49,42 @@ class Agent:
         down = head+Direction.DOWN
         up = head+Direction.UP
 
-        point_cost_right = game.traverse_cost(
-            right, head, Direction.RIGHT)
-        point_cost_left = game.traverse_cost(
-            left, head, Direction.LEFT)
-        point_cost_up = game.traverse_cost(
-            up, head, Direction.UP)
-        point_cost_down = game.traverse_cost(
-            down, head, Direction.DOWN)
+        # point_cost_right = game.traverse_cost(
+        #     right, head, Direction.RIGHT)
+        # point_cost_left = game.traverse_cost(
+        #     left, head, Direction.LEFT)
+        # point_cost_up = game.traverse_cost(
+        #     up, head, Direction.UP)
+        # point_cost_down = game.traverse_cost(
+        #     down, head, Direction.DOWN)
 
-        costs = [point_cost_down, point_cost_left,
-                 point_cost_right, point_cost_up]
+        costs = [game.traverse_cost(Direction.DOWN), game.traverse_cost(Direction.LEFT),
+                 game.traverse_cost(Direction.RIGHT), game.traverse_cost(Direction.UP)]
         max_cost = max(costs)
-        directions_costs = [-1, -1, -1, -1]
+        directions_costs = [0, 0, 0, 0]
         directions_costs[costs.index(max_cost)] = 1
 
-        collisions = [-1 if game.is_collision(down) else 1,
-                      -1 if game.is_collision(left) else 1,
-                      -1 if game.is_collision(right) else 1,
-                      -1 if game.is_collision(up) else 1]
+        collisions = [0 if game.is_collision(down) else 1,
+                      0 if game.is_collision(left) else 1,
+                      0 if game.is_collision(right) else 1,
+                      0 if game.is_collision(up) else 1]
 
-        moves = [-1, -1, -1, -1]
-        if head.x % 2:
-            moves[0] = 1
-        else:
-            moves[1] = 1
-
+        moves = [0, 0, 0, 0]
         if head.y % 2:
-            moves[2] = 1
+            moves[1] = 1  # left
         else:
-            moves[3] = 1
+            moves[2] = 1  # right
 
-        food_direction = game.food_direction(head)
-        food_directions = [food_direction.x, food_direction.y]
+        if head.x % 2:
+            moves[3] = 1  # up
+        else:
+            moves[0] = 1  # down
+
+        food_direction = game.food - head
+        food_directions = [1 if food_direction.y > 0 else 0,
+                           1 if food_direction.x < 0 else 0,
+                           1 if food_direction.x > 0 else 0,
+                           1 if food_direction.y < 0 else 0]
 
         state = costs + collisions + moves + food_directions
 
@@ -110,7 +113,7 @@ class Agent:
     def train_short_memory(self, state, action, reward, next_state, game_over):
         self.trainer.train_step(state, action, reward, next_state, game_over)
 
-    def get_action(self, state):
+    def get_action_ai(self, state):
         # random moves: tradeoff between exploration vs exploitation
         self.epsilon = 80 - self.number_of_games
         action = [0 for _ in range(OUTPUT_SIZE)]
@@ -128,6 +131,26 @@ class Agent:
             action[move] = 1
 
         return action
+
+    def get_action_heurist(self, state, game: SnakeGameAI):
+        costs = state[0:4]
+        collisions = state[4:8]
+        moves = state[8:12]
+        food_directions = state[12:16]
+        action = [1 if costs[i]*collisions[i] *
+                  moves[i]*food_directions[i] > 0 else 0 for i in range(4)]
+        while sum(action) == 0:
+            action = [1 if collisions[i] *
+                      food_directions[i] > 0 else 0 for i in range(4)]
+            if sum(action) > 0:
+                return action
+            action = [1 if collisions[i] *
+                      costs[i] > 0 else 0 for i in range(4)]
+
+        return action
+
+    def get_action(self, state, game):
+        return self.get_action_heurist(state, game)
 
     def get_play(self, state):
         self.trainer.model.eval()
