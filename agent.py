@@ -52,7 +52,13 @@ class Agent:
         down = head+Direction.DOWN
         up = head+Direction.UP
 
-        costs = [0, 0, 0, 0]
+        is_gap = game.is_gap()
+        must_turn = [
+            1 if is_gap == Direction.DOWN else 0,
+            1 if is_gap == Direction.LEFT else 0,
+            1 if is_gap == Direction.RIGHT else 0,
+            1 if is_gap == Direction.UP else 0
+        ]
 
         collisions = [0 if game.is_collision(down) else 1,
                       0 if game.is_collision(left) else 1,
@@ -72,7 +78,7 @@ class Agent:
 
         food_distances = game.manhattan_distances
 
-        state = costs + collisions + moves + food_distances
+        state = must_turn + collisions + moves + food_distances
 
         return state
 
@@ -118,7 +124,9 @@ class Agent:
         return action
 
     def get_action_heurist(self, state, game: SnakeGameAI):
-        costs = state[0:4]
+        must_turn = state[0:4]
+        if sum(must_turn) == 1:
+            return must_turn
         collisions = state[4:8]
         moves = state[8:12]
         food_distances = state[12:16]
@@ -140,7 +148,7 @@ class Agent:
         else:
             a = actions[0]
         action[a] = 1
-        is_death = game.is_collision(game.head+self.directions[a])
+
         return action
 
     def get_action(self, state, game):

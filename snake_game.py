@@ -320,3 +320,16 @@ class SnakeGameAI:
             return '\u25F3'
         if pt.x % 2 and pt.y % 2 == 0:
             return '\u25F2'
+
+    def is_gap(self):
+        directions = self.head.allowed_directions()
+        if directions.x == 0 or directions.y == 0:
+            return False
+
+        target_point = self.head + directions + self.direction
+        turn_point = self.head + directions - self.direction
+
+        if (target_point) in self.snake and not self.is_collision(turn_point):
+            return directions - self.direction
+
+        return False
