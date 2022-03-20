@@ -334,6 +334,11 @@ class GeneticAlgo:
             self.best_score_generation = individual.score
             self.best_individual_order = individual.order
 
+        if individual.game_over:
+            self.total_game_over += 1
+        elif self.individual_highlight.game_over:
+            self.individual_highlight = individual
+
     def __repr__(self):
         return f'Genetic Pop={self.population_size} LR={self.lr} Hidden={self.hidden_size}'
 
@@ -397,13 +402,6 @@ class GeneticAlgo:
     def play_step(self, user_event: List[int]):
 
         for individual in self.population:
-
-            if individual.game_over:
-                self.total_game_over += 1
-                continue
-
-            if self.individual_highlight.game_over:
-                self.individual_highlight = individual
             individual.play_step(user_event)
             self.update_stats(individual)
 
@@ -415,6 +413,8 @@ class GeneticAlgo:
                 file_name=f'model_winner_{self.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
             print(
                 f'Generation {self.generation_count} has a winner ID {self.population[0].order}')
+            return True
+        return False
 
     def reset(self):
         self.total_game_over = 0

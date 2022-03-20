@@ -3,9 +3,9 @@ import torch
 import random
 from collections import deque
 from model import QTrainer
-from snake_game import Direction, SnakeGameAI, Point
+from snake_game import Direction, SnakeGameAI
 from helper import plot
-from settings import GAME_TABLE_COLUMNS, GAME_TABLE_ROWS, MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
+from settings import MAX_MEMORY, OUTPUT_SIZE, BATCH_SIZE
 
 
 class Agent:
@@ -21,6 +21,9 @@ class Agent:
 
         self.trainer: QTrainer = QTrainer(
             lr=lr, gamma=self.gamma, input_size=input_size, hidden_size=hidden_size)
+
+        self.directions = [Direction.DOWN,
+                           Direction.LEFT, Direction.RIGHT, Direction.UP]
 
     def __repr__(self):
         return f'Agent(games:{self.number_of_games}, epsilon:{self.epsilon},' \
@@ -49,20 +52,7 @@ class Agent:
         down = head+Direction.DOWN
         up = head+Direction.UP
 
-        # point_cost_right = game.traverse_cost(
-        #     right, head, Direction.RIGHT)
-        # point_cost_left = game.traverse_cost(
-        #     left, head, Direction.LEFT)
-        # point_cost_up = game.traverse_cost(
-        #     up, head, Direction.UP)
-        # point_cost_down = game.traverse_cost(
-        #     down, head, Direction.DOWN)
-
-        costs = [game.traverse_cost(Direction.DOWN), game.traverse_cost(Direction.LEFT),
-                 game.traverse_cost(Direction.RIGHT), game.traverse_cost(Direction.UP)]
-        max_cost = max(costs)
-        directions_costs = [0, 0, 0, 0]
-        directions_costs[costs.index(max_cost)] = 1
+        costs = [0, 0, 0, 0]
 
         collisions = [0 if game.is_collision(down) else 1,
                       0 if game.is_collision(left) else 1,
@@ -76,19 +66,14 @@ class Agent:
             moves[2] = 1  # right
 
         if head.x % 2:
-            moves[3] = 1  # up
-        else:
             moves[0] = 1  # down
+        else:
+            moves[3] = 1  # up
 
-        food_direction = game.food - head
-        food_directions = [1 if food_direction.y > 0 else 0,
-                           1 if food_direction.x < 0 else 0,
-                           1 if food_direction.x > 0 else 0,
-                           1 if food_direction.y < 0 else 0]
+        food_distances = game.manhattan_distances
 
-        state = costs + collisions + moves + food_directions
+        state = costs + collisions + moves + food_distances
 
-        # return np.array(state, dtype=int)
         return state
 
     def remember(self, state, action, reward, next_state, game_over):
@@ -136,17 +121,26 @@ class Agent:
         costs = state[0:4]
         collisions = state[4:8]
         moves = state[8:12]
-        food_directions = state[12:16]
-        action = [1 if costs[i]*collisions[i] *
-                  moves[i]*food_directions[i] > 0 else 0 for i in range(4)]
-        while sum(action) == 0:
-            action = [1 if collisions[i] *
-                      food_directions[i] > 0 else 0 for i in range(4)]
-            if sum(action) > 0:
-                return action
-            action = [1 if collisions[i] *
-                      costs[i] > 0 else 0 for i in range(4)]
+        food_distances = state[12:16]
 
+        action = [0, 0, 0, 0]
+        actions = []
+        distances = []
+        for i in range(4):
+            if collisions[i] > 0 and moves[i] > 0:
+                actions.append(i)
+                distances.append(food_distances[i])
+        if len(actions) > 1:
+            if distances[0] == distances[1]:
+                a = random.choice(actions)
+            else:
+                min_distance = min(distances)
+                min_index = distances.index(min_distance)
+                a = actions[min_index]
+        else:
+            a = actions[0]
+        action[a] = 1
+        is_death = game.is_collision(game.head+self.directions[a])
         return action
 
     def get_action(self, state, game):

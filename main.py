@@ -6,7 +6,7 @@ import pygame
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT, MAX_GENERATIONS, WHITE, Play_Type, CLOCK_SPEED
 
 from genetic import GeneticAlgo
-from helper import plot_genetic, timer
+from helper import plot_genetic
 
 
 def main(*args, **kwargs):
@@ -45,6 +45,8 @@ def main(*args, **kwargs):
                     file_name=f'model_{genetic_algo.individual_save.score}_{genetic_algo.generation_count}_{datetime.datetime.now().strftime("%Y%m%d%H%M%S")}.pth')
 
             if genetic_algo.has_winner():
+                print(
+                    f'count_steps: {genetic_algo.individual_highlight.game.count_steps}')
                 break
 
             if genetic_algo.generation_count > MAX_GENERATIONS:
@@ -57,10 +59,11 @@ def main(*args, **kwargs):
             genetic_algo.update_ui()
             user_event = None
             screen.fill(WHITE)
-            for event in pygame.event.get():
+            for event in pygame.event.get(pygame.QUIT):
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     sys.exit()
+            for event in pygame.event.get(pygame.KEYDOWN):
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_ESCAPE:
                         pygame.quit()
@@ -87,6 +90,7 @@ def main(*args, **kwargs):
     print(
         f'best_score_all_time {genetic_algo.best_score_all_time} generation_count {genetic_algo.generation_count}')
 
+    # if kwargs['display_gui']:
     pygame.quit()
 
 

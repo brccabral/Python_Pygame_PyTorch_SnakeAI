@@ -1,3 +1,4 @@
+import datetime
 import math
 from typing import List, Tuple
 import pygame
@@ -67,7 +68,7 @@ class Point:
 
     def __mul__(self, other: "Point"):
         if type(other) == int:
-            return Point(self.x*other, self.y * other)
+            return Point(self.x * other, self.y * other)
         return Point(self.x * other.x, self.y * other.y)
 
     def __and__(self, other: "Point"):
@@ -86,6 +87,17 @@ class Point:
         if other == Point(0, 0):
             return -1
         return self.dot(other)/(self.magnitude()*other.magnitude())
+
+    def allowed_directions(self):
+        if self.x % 2:
+            y = 1
+        else:
+            y = -1
+        if self.y % 2:
+            x = -1
+        else:
+            x = 1
+        return Point(x, y)
 
 
 class Direction:
@@ -136,9 +148,9 @@ class Node:
             self.next_up = previous
 
         if self.point.x % 2:
-            self.next_down = -1
-        else:
             self.next_up = -1
+        else:
+            self.next_down = -1
 
         if self.point.y % 2:
             self.next_right = -1
@@ -170,25 +182,29 @@ class Node:
         return (self.next_right is not None and self.next_left is not None
                 and self.next_down is not None and self.next_up is not None)
 
-    def get_next_empty(self, game: "SnakeGameAI"):
-        new_node = self
+    def get_next_side(self, food: Point):
+        next_side = None
+        food_direction = (food - self.point).unit()
+        if self.next_right is None and food_direction.x > 0:
+            next_side = Direction.RIGHT
+        elif self.next_left is None and food_direction.x < 0:
+            next_side = Direction.LEFT
+        elif self.next_down is None and food_direction.y > 0:
+            next_side = Direction.DOWN
+        elif self.next_up is None and food_direction.y < 0:
+            next_side = Direction.UP
+        if next_side is not None:
+            return next_side
+
         if self.next_right is None:
-            new_node = Node(self.point + Direction.RIGHT,
-                            self, Direction.RIGHT, game)
-            self.next_right = new_node
+            next_side = Direction.RIGHT
         elif self.next_left is None:
-            new_node = Node(self.point + Direction.LEFT,
-                            self, Direction.LEFT, game)
-            self.next_left = new_node
+            next_side = Direction.LEFT
         elif self.next_down is None:
-            new_node = Node(self.point + Direction.DOWN,
-                            self, Direction.DOWN, game)
-            self.next_down = new_node
+            next_side = Direction.DOWN
         elif self.next_up is None:
-            new_node = Node(self.point + Direction.UP,
-                            self, Direction.UP, game)
-            self.next_up = new_node
-        return new_node
+            next_side = Direction.UP
+        return next_side
 
     def update_cost(self, game: "SnakeGameAI"):
         if self.previous is not None:
@@ -199,49 +215,6 @@ class Node:
 
     def __repr__(self):
         return f"Node({self.point}, cost:{self.cost}, previous:{self.previous.point if self.previous is not None else -1})"
-
-    def has_next(self):
-        return type(self.next_down) == Node or type(self.next_left) == Node or type(self.next_right) == Node or type(self.next_up) == Node
-
-    def get_next_node(self):
-        node = None
-
-        if type(self.next_right) == Node and self.next_right.point != self.previous.point:
-            node = self.next_right
-        elif type(self.next_left) == Node and self.next_left.point != self.previous.point:
-            node = self.next_left
-        elif type(self.next_down) == Node and self.next_down.point != self.previous.point:
-            node = self.next_down
-        elif type(self.next_up) == Node and self.next_up.point != self.previous.point:
-            node = self.next_up
-
-        return node
-
-    def is_allowed_right(self):
-        return self.point.y % 2 == 0
-
-    def is_allowed_left(self):
-        return self.point.y % 2
-
-    def is_allowed_down(self):
-        return self.point.x % 2 == 0
-
-    def is_allowed_up(self):
-        return self.point.y % 2
-
-    def allowed_moves(self):
-        return [self.is_allowed_down(), self.is_allowed_left(), self.is_allowed_right(), self.is_allowed_up()]
-
-    def allowed_directions(self):
-        if self.point.x % 2:
-            y = -1 if self.next_up != -1 else 0
-        else:
-            y = 1 if self.next_down != -1 else 0
-        if self.point.y % 2:
-            x = -1 if self.next_left != -1 else 0
-        else:
-            x = 1 if self.next_right != -1 else 0
-        return Point(x, y)
 
 
 class SnakeGameAI:
@@ -257,11 +230,13 @@ class SnakeGameAI:
         self.reset()
 
     def _place_food(self):
-        x = random.randint(0, GAME_TABLE_COLUMNS-1)
-        y = random.randint(0, GAME_TABLE_ROWS-1)
+        x = self.head.x
+        y = self.head.y
         self.food = Point(x, y)
-        if self.food in self.snake:
-            self._place_food()
+        while self.food in self.snake:
+            x = random.randint(0, GAME_TABLE_COLUMNS-1)
+            y = random.randint(0, GAME_TABLE_ROWS-1)
+            self.food = Point(x, y)
 
     def play_step(self, action):
         """receives an action from the agent and updates the game
@@ -280,7 +255,7 @@ class SnakeGameAI:
             self._move(action)  # update the head
 
             # 3. check if game over
-            if self.is_collision() or self.count_steps > min(2*(GAME_TABLE_ROWS*GAME_TABLE_COLUMNS), 100*len(self.snake)):
+            if self.is_collision():
                 self.game_over = True
                 reward = -10
                 self.snake.pop()
@@ -289,13 +264,22 @@ class SnakeGameAI:
             # 4. place new food or just move
             if self.head == self.food:
                 self.score += 1
-                self._place_food()
+                self.total_steps += self.count_steps
+                print(
+                    f'{datetime.datetime.now()} Score: {self.score} Steps: {self.count_steps} Total: {self.total_steps}')
                 reward = 10
                 self.count_steps = 0
+                if len(self.snake) < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS:
+                    self._place_food()
+                else:
+                    self.game_over = True
+                    return reward, self.game_over, self.score
             else:
                 self.snake.pop()
 
-            self.traverse_table()
+            self._get_distances()
+            # self.traverse_table()
+            # self.towards_food()
         # 6. return game over and score
         return reward, self.game_over, self.score
 
@@ -319,9 +303,6 @@ class SnakeGameAI:
         point_distance = self.manhattan_distance(pt)
         return int((head_distance - point_distance) > 0)
 
-    def manhattan_distance(self, pt: Point = None) -> int:
-        return abs(self.food.x - pt.x) + abs(self.food.y - pt.y)
-
     def is_out_of_board(self, pt: Point):
         if pt.x < 0 or pt.y < 0 or pt.x > GAME_TABLE_COLUMNS-1 or pt.y > GAME_TABLE_ROWS-1:
             return True
@@ -339,157 +320,134 @@ class SnakeGameAI:
             cost += 1
         return cost
 
-    def get_next_attempt(self, node: Node):
-        food_direction = node.point.target_directions(self.food)
-        food_horizontal = food_direction & Direction.HORIZONTAL
-        food_vertical = food_direction & Direction.VERTICAL
-        allowed_directions = node.allowed_directions()
-        allowed_horizontal = allowed_directions & Direction.HORIZONTAL
-        allowed_vertical = allowed_directions & Direction.VERTICAL
-
-        horizontal_move = food_horizontal & allowed_horizontal
-        vertical_move = food_vertical & allowed_vertical
-
-        next_horizontal: Point = node.point + horizontal_move
-        next_vertical: Point = node.point + vertical_move
-
-        if self.traverse_path[next_horizontal.y][next_horizontal.x] != 0:
-            next_horizontal_node = self.traverse_path[next_horizontal.y][next_horizontal.x]
-        else:
-            next_horizontal_node = Node(
-                next_horizontal, node, horizontal_move, self)
-
-        if self.traverse_path[next_vertical.y][next_vertical.x] != 0:
-            next_vertical_node = self.traverse_path[next_vertical.y][next_vertical.x]
-        else:
-            next_vertical_node = Node(next_vertical, node, vertical_move, self)
-
-        next_horizontal_allowed = next_horizontal_node.allowed_directions()
-        next_horizontal_food = next_horizontal_node.point.target_directions(
-            self.food)
-
-        next_vertical_allowed = next_vertical_node.allowed_directions()
-        next_vertical_food = next_vertical_node.point.target_directions(
-            self.food)
-
-        if next_horizontal_node.point != node.point:
-            if (next_horizontal_allowed & Direction.HORIZONTAL) == (next_horizontal_food & Direction.HORIZONTAL):
-                return horizontal_move
-            if (next_horizontal_allowed & Direction.VERTICAL) == (next_horizontal_food & Direction.VERTICAL):
-                return horizontal_move
-
-        if next_vertical_node.point != node.point:
-            if (next_vertical_allowed & Direction.VERTICAL) == (next_vertical_food & Direction.VERTICAL):
-                return vertical_move
-            if (next_vertical_allowed & Direction.HORIZONTAL) == (next_vertical_food & Direction.HORIZONTAL):
-                return vertical_move
-
-        if (next_horizontal_allowed & Direction.HORIZONTAL) != Point(0, 0):
-            return next_horizontal_allowed & Direction.HORIZONTAL
-
-        if (next_vertical_allowed & Direction.VERTICAL) != Point(0, 0):
-            return next_vertical_allowed & Direction.VERTICAL
-
-        return Point(0, 0)
-
-    def get_new_node(self, node: Node):
-        next_attempt = self.get_next_attempt(node)
-
-        next_point = node.point + next_attempt
-        if next_point == node.point:
-            if node.is_complete():
-                return node.previous
-            return node
-
-        if self.traverse_path[next_point.y][next_point.x] != 0:
-            new_node = self.traverse_path[next_point.y][next_point.x]
-        else:
-            new_node = Node(next_point, node, next_attempt, self)
-
-        if next_attempt == Direction.RIGHT:
-            if new_node.cost < 0:
-                node.next_right = -1
-                return node
-            node.next_right = new_node
-        elif next_attempt == Direction.LEFT:
-            if new_node.cost < 0:
-                node.next_left = -1
-                return node
-            node.next_left = new_node
-        elif next_attempt == Direction.DOWN:
-            if new_node.cost < 0:
-                node.next_down = -1
-                return node
-            node.next_down = new_node
-        elif next_attempt == Direction.UP:
-            if new_node.cost < 0:
-                node.next_up = -1
-                return node
-            node.next_up = new_node
-        else:
-            new_node = node.previous
-
-        return new_node
+    def _get_distances(self):
+        self.manhattan_distances = [
+            (self.head + Direction.DOWN).distance(self.food),
+            (self.head + Direction.LEFT).distance(self.food),
+            (self.head + Direction.RIGHT).distance(self.food),
+            (self.head + Direction.UP).distance(self.food)
+        ]
 
     def traverse_table(self):
-        self.display.fill(BLACK)
-
         head = self.snake[0]
-        # reset table
-        self.traverse_path: List[List[Node]] = [
-            [0 for _ in range(GAME_TABLE_COLUMNS)] for __ in range(GAME_TABLE_ROWS)]
-        node = Node(head, None, None, self)
-        node.cost = 0  # reset cost for head
-        self.traverse_path[head.y][head.x] = node
+        head_node = Node(head, None, None, self)
+        head_node.cost = 0  # reset cost for head
+        self.costs = [-1, -1, -1, -1]
 
-        steps = 0
-        found_food = False
+        while not head_node.is_complete():
+            steps = 0
+            found_food = False
+            # reset table
+            self.traverse_path: List[List[Node]] = [
+                [0 for _ in range(GAME_TABLE_COLUMNS)] for __ in range(GAME_TABLE_ROWS)]
+            self.traverse_path[head.y][head.x] = head_node
 
-        while not (node.point == head and node.is_complete()):
-            if node.point == head:
-                node = node.get_next_empty(self)
-            else:
-                node = self.get_new_node(node)
+            # get next side
+            current_side = head_node.get_next_side(
+                self.food)  # safe because head is not complete
+            current_node = Node(head + current_side,
+                                head_node, current_side, self)
+            if current_side == Direction.DOWN:
+                head_node.next_down = current_node
+            elif current_side == Direction.LEFT:
+                head_node.next_left = current_node
+            elif current_side == Direction.RIGHT:
+                head_node.next_right = current_node
+            elif current_side == Direction.UP:
+                head_node.next_up = current_node
 
-            self.traverse_path[node.point.y][node.point.x] = node
-            self._display_block(WHITE, node.point)
-            text = self.font_symbols.render(
-                self._get_unicode(node.point), True, BLACK)
-            self.display.blit(
-                text, [node.point.x*BLOCK_SIZE, node.point.y*BLOCK_SIZE])
-            print("*" * GAME_TABLE_COLUMNS)
-            print(self.get_board())
+            node = current_node
 
-            if node.cost > steps:
-                steps = node.cost
+            while True:
+                self._display_block(WHITE, node.point)
+                steps += 1
 
-            if node.point == self.food:
-                found_food = True
+                self.traverse_path[node.point.y][node.point.x] = node
+                text = self.font_symbols.render(
+                    self._get_unicode(node.point), True, BLACK)
+                self.display.blit(
+                    text, [node.point.x*BLOCK_SIZE, node.point.y*BLOCK_SIZE])
+                # print("*" * GAME_TABLE_COLUMNS)
+                # print(self.get_board())
 
-            if steps >= len(self.snake) and found_food:
-                steps = node.cost
-                node = self.traverse_path[head.y][head.x]
+                if node.point == self.food:
+                    steps += -1
+                    found_food = True
+                if steps >= len(self.snake) and found_food:
+                    break
 
-    def traverse_cost(self, direction: Direction):
-        print("*" * GAME_TABLE_COLUMNS)
-        print(self.get_board())
-        head: Point = self.snake[0]
-        point: Point = head + direction
-        if self.is_out_of_board(point):
+                next_side = node.get_next_side(self.food)
+                if next_side is None:
+                    node = node.previous
+                    steps += -1
+                    if node is None:
+                        break
+                    if node.point == current_node.point:
+                        break
+                    if node.point == head:
+                        break
+                else:
+                    next_point = node.point + next_side
+                    if self.traverse_path[next_point.y][next_point.x] != 0:
+                        new_node = self.traverse_path[next_point.y][next_point.x]
+                    else:
+                        new_node = Node(node.point + next_side,
+                                        node, next_side, self)
+                    if next_side == Direction.DOWN:
+                        node.next_down = new_node
+                    elif next_side == Direction.LEFT:
+                        node.next_left = new_node
+                    elif next_side == Direction.RIGHT:
+                        node.next_right = new_node
+                    elif next_side == Direction.UP:
+                        node.next_up = new_node
+                    node = new_node
+
+            if current_side == Direction.DOWN:
+                self.costs[0] = len(self.snake)/steps if steps > 0 else -1
+            elif current_side == Direction.LEFT:
+                self.costs[1] = len(self.snake)/steps if steps > 0 else -1
+            elif current_side == Direction.RIGHT:
+                self.costs[2] = len(self.snake)/steps if steps > 0 else -1
+            elif current_side == Direction.UP:
+                self.costs[3] = len(self.snake)/steps if steps > 0 else -1
+
+    def towards_food(self):
+        self.towards_food_direction = [
+            self.is_towards_food(self.head, Direction.DOWN),
+            self.is_towards_food(self.head, Direction.LEFT),
+            self.is_towards_food(self.head, Direction.RIGHT),
+            self.is_towards_food(self.head, Direction.UP),
+        ]
+
+    def is_towards_food(self, point: Point, direction: Direction):
+        point_allowed_directions = point.allowed_directions()  # (1,1) / (-1,-1)
+        if direction == Direction.DOWN and point_allowed_directions.y != 1:
             return -1
-        node = self.traverse_path[point.y][point.x]
-        if node == 0:
+        if direction == Direction.LEFT and point_allowed_directions.x != -1:
+            return -1
+        if direction == Direction.RIGHT and point_allowed_directions.x != 1:
+            return -1
+        if direction == Direction.UP and point_allowed_directions.y != -1:
             return -1
 
-        cost = 1
-        while node.has_next():
-            cost += 1
-            node = node.get_next_node()
+        next_point: Point = point + direction
+        if self.is_out_of_board(next_point):
+            return -1
+        if self.food == next_point:
+            return 1
 
-        return cost
+        food_direction: Point = next_point.target_directions(
+            self.food)  # (0,1) / (1,0)
+        next_allowed_directions = next_point.allowed_directions()  # (1,1) / (-1,-1)
+
+        if food_direction.x == next_allowed_directions.x or food_direction.y == next_allowed_directions.y:
+            return 1
+
+        return -1
 
     def update_ui(self):
-        # self.display.fill(BLACK)
+        self.display.fill(BLACK)
 
         self._display_block(GREEN1, self.head)
         self._display_block(GREEN2, self.head, BLOCK_DRAW_OFFSET)
@@ -524,20 +482,13 @@ class SnakeGameAI:
         """reset is called at __init__ and by AI agent
         """
 
-        self.score = 0
         # this will limit the number of moves the snake can make
         # until it is considered game over, default to 100*snake_size
         self.count_steps = 0
+        self.total_steps = 0
 
         self.game_over = False
 
-        self.head = Point(20, 12)
-        self.snake = [self.head, self.head+Direction.DOWN,
-                      self.head+Direction.DOWN+Direction.DOWN]
-        self.food = Point(25, 19)
-        self.direction = Direction.UP
-        self.traverse_table()
-        return
         # init game state
         direction = random.randint(0, 3)
         if direction == 0:
@@ -552,12 +503,12 @@ class SnakeGameAI:
         self.head = Point(GAME_TABLE_COLUMNS//2, GAME_TABLE_ROWS//2)
         self.snake = [self.head,
                       Point(self.head.x-self.direction.x,
-                            self.head.y-self.direction.y),
-                      Point(self.head.x-self.direction.x*2,
-                            self.head.y-self.direction.y*2)]
+                            self.head.y-self.direction.y)]
+        self.score = len(self.snake)
 
         self.food = None
         self._place_food()
+        self._get_distances()
 
     def get_board(self, marker: Point = None):
         rows = []
@@ -573,19 +524,19 @@ class SnakeGameAI:
                     columns.append('X')
                 elif pt == marker:
                     columns.append('M')
-                elif self.traverse_path[pt.y][pt.x] != 0:
-                    columns.append(self._get_unicode(pt))
+                # elif self.traverse_path[pt.y][pt.x] != 0:
+                #     columns.append(self._get_unicode(pt))
                 else:
                     columns.append('_')
             rows.append("|".join(columns))
         return "\n".join(rows)
 
     def _get_unicode(self, pt: Point):
-        if pt.x % 2 and pt.y % 2:
-            return '\u25F0'
         if pt.x % 2 == 0 and pt.y % 2:
+            return '\u25F0'
+        if pt.x % 2 and pt.y % 2:
             return '\u25F1'
-        if pt.x % 2 and pt.y % 2 == 0:
-            return '\u25F3'
         if pt.x % 2 == 0 and pt.y % 2 == 0:
+            return '\u25F3'
+        if pt.x % 2 and pt.y % 2 == 0:
             return '\u25F2'
