@@ -72,8 +72,8 @@ class Point:
         return Point(self.x * other.x, self.y * other.y)
 
     def __and__(self, other: "Point"):
-        horizontal = self.x if other.x else 0
-        vertical = self.y if other.y else 0
+        horizontal = self.x if other.x != 0 else 0
+        vertical = self.y if other.y != 0 else 0
         return Point(horizontal, vertical)
 
     def dot(self, other: "Point"):
@@ -182,6 +182,7 @@ class SnakeGameAI:
                 self.count_steps = 0
                 if len(self.snake) < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS:
                     self._place_food()
+                    self._create_dijkstra()
                 else:
                     self.game_over = True
                     return reward, self.game_over, self.score
@@ -289,6 +290,7 @@ class SnakeGameAI:
         self.food = None
         self._place_food()
         self._get_distances()
+        self._create_dijkstra()
 
     def get_board(self, marker: Point = None):
         rows = []
@@ -296,18 +298,20 @@ class SnakeGameAI:
             columns = []
             for x in range(GAME_TABLE_COLUMNS):
                 pt = Point(x, y)
-                if pt == self.food:
-                    columns.append('F')
-                elif pt == self.snake[0]:
-                    columns.append('H')
-                elif pt in self.snake[1:]:
-                    columns.append('X')
-                elif pt == marker:
-                    columns.append('M')
-                # elif self.traverse_path[pt.y][pt.x] != 0:
-                #     columns.append(self._get_unicode(pt))
-                else:
-                    columns.append('_')
+                if self.dijkstra[pt.y][pt.x] != -1:
+                    columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
+                # if pt == self.food:
+                #     columns.append('F')
+                # elif pt == self.snake[0]:
+                #     columns.append('H')
+                # elif pt in self.snake[1:]:
+                #     columns.append('X')
+                # elif pt == marker:
+                #     columns.append('M')
+                # # elif self.traverse_path[pt.y][pt.x] != 0:
+                # #     columns.append(self._get_unicode(pt))
+                # else:
+                #     columns.append('_')
             rows.append("|".join(columns))
         return "\n".join(rows)
 
@@ -333,3 +337,47 @@ class SnakeGameAI:
             return directions - self.direction
 
         return False
+
+    def _create_dijkstra(self):
+        # the distance will never be this value, we can use it as control number
+        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS 
+        self.dijkstra = [[maximum for c in range(
+            GAME_TABLE_COLUMNS)] for r in range(GAME_TABLE_ROWS)]
+
+        # set head to 0
+        self.dijkstra[self.head.y][self.head.x] = 0
+        # set snake body to one less than maximum, also will never be a distance
+        for s in self.snake[1:]:
+            self.dijkstra[s.y][s.x] = maximum - 1
+
+        steps = 0
+        while not self.is_dijkstra_complete():
+            if not self.find_next_dijkstra(steps, maximum):
+                steps += 1
+
+    def is_dijkstra_complete(self):
+        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
+        for row in self.dijkstra:
+            if maximum in row:
+                return False
+        return True
+
+    def find_next_dijkstra(self, current_step: int, maximum: int):
+        found = False
+        for r, row in enumerate(self.dijkstra):
+            if current_step in row:
+                for c, column in enumerate(row):
+                    if current_step == column:
+                        point = Point(c, r)
+                        point_direction = point.allowed_directions()
+                        next_attempt_h = point + \
+                            (point_direction & Direction.HORIZONTAL)
+                        next_attempt_v = point + \
+                            (point_direction & Direction.VERTICAL)
+                        if not self.is_collision(next_attempt_h) and self.dijkstra[next_attempt_h.y][next_attempt_h.x] == maximum:
+                            self.dijkstra[next_attempt_h.y][next_attempt_h.x] = current_step + 1
+                            found = True
+                        if not self.is_collision(next_attempt_v) and self.dijkstra[next_attempt_v.y][next_attempt_v.x] == maximum:
+                            self.dijkstra[next_attempt_v.y][next_attempt_v.x] = current_step + 1
+                            found = True
+        return found
