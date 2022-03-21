@@ -182,7 +182,6 @@ class SnakeGameAI:
                 self.count_steps = 0
                 if len(self.snake) < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS:
                     self._place_food()
-                    self._create_dijkstra()
                 else:
                     self.game_over = True
                     return reward, self.game_over, self.score
@@ -190,6 +189,7 @@ class SnakeGameAI:
                 self.snake.pop()
 
             self._get_distances()
+            self._create_dijkstra()
             # self.traverse_table()
             # self.towards_food()
         # 6. return game over and score
@@ -230,6 +230,11 @@ class SnakeGameAI:
 
     def update_ui(self):
         self.display.fill(BLACK)
+
+        for r, row in enumerate(self.dijkstra):
+            for c, column in enumerate(row):
+                text = self.font_symbols.render(f'{column}', True, WHITE)
+                self.display.blit(text, [c*BLOCK_SIZE, r*BLOCK_SIZE])
 
         self._display_block(GREEN1, self.head)
         self._display_block(GREEN2, self.head, BLOCK_DRAW_OFFSET)
@@ -340,7 +345,7 @@ class SnakeGameAI:
 
     def _create_dijkstra(self):
         # the distance will never be this value, we can use it as control number
-        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS 
+        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
         self.dijkstra = [[maximum for c in range(
             GAME_TABLE_COLUMNS)] for r in range(GAME_TABLE_ROWS)]
 
@@ -349,35 +354,25 @@ class SnakeGameAI:
         # set snake body to one less than maximum, also will never be a distance
         for s in self.snake[1:]:
             self.dijkstra[s.y][s.x] = maximum - 1
+        # reset tail
+        self.dijkstra[self.snake[-1].y][self.snake[-1].x] = maximum
 
         steps = 0
-        while not self.is_dijkstra_complete():
-            if not self.find_next_dijkstra(steps, maximum):
+        neighbors = []
+        visited = [self.head]
+        while len(visited) > 0:
+            current = visited.pop()
+            self.dijkstra[current.y][current.x] = steps
+            current_direction = current.allowed_directions()
+            next_attempt_h = current + \
+                (current_direction & Direction.HORIZONTAL)
+            next_attempt_v = current + \
+                (current_direction & Direction.VERTICAL)
+            if not self.is_collision(next_attempt_h) and self.dijkstra[next_attempt_h.y][next_attempt_h.x] == maximum and next_attempt_h not in neighbors:
+                neighbors.append(next_attempt_h)
+            if not self.is_collision(next_attempt_v) and self.dijkstra[next_attempt_v.y][next_attempt_v.x] == maximum and next_attempt_v not in neighbors:
+                neighbors.append(next_attempt_v)
+            if len(visited) == 0 and len(neighbors) > 0:
                 steps += 1
-
-    def is_dijkstra_complete(self):
-        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
-        for row in self.dijkstra:
-            if maximum in row:
-                return False
-        return True
-
-    def find_next_dijkstra(self, current_step: int, maximum: int):
-        found = False
-        for r, row in enumerate(self.dijkstra):
-            if current_step in row:
-                for c, column in enumerate(row):
-                    if current_step == column:
-                        point = Point(c, r)
-                        point_direction = point.allowed_directions()
-                        next_attempt_h = point + \
-                            (point_direction & Direction.HORIZONTAL)
-                        next_attempt_v = point + \
-                            (point_direction & Direction.VERTICAL)
-                        if not self.is_collision(next_attempt_h) and self.dijkstra[next_attempt_h.y][next_attempt_h.x] == maximum:
-                            self.dijkstra[next_attempt_h.y][next_attempt_h.x] = current_step + 1
-                            found = True
-                        if not self.is_collision(next_attempt_v) and self.dijkstra[next_attempt_v.y][next_attempt_v.x] == maximum:
-                            self.dijkstra[next_attempt_v.y][next_attempt_v.x] = current_step + 1
-                            found = True
-        return found
+                visited += neighbors
+                neighbors = []
