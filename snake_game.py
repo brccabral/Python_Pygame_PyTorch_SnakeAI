@@ -3,7 +3,7 @@ import math
 from typing import Tuple
 import pygame
 import random
-from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, GREEN1, GREEN2, BLACK, BLUE1, BLUE2, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED, YELLOW1, YELLOW2
+from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, BLACK, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED
 from collections import deque
 
 
@@ -231,13 +231,14 @@ class SnakeGameAI:
     def update_ui(self):
         self.display.fill(BLACK)
 
-        self._display_block(GREEN1, self.head)
-        self._display_block(GREEN2, self.head, BLOCK_DRAW_OFFSET)
-        for pt in self.snake[1:]:
-            self._display_block(BLUE1, pt)
-            self._display_block(BLUE2, pt, BLOCK_DRAW_OFFSET)
-        self._display_block(YELLOW1, self.snake[-1])
-        self._display_block(YELLOW2, self.snake[-1], BLOCK_DRAW_OFFSET)
+        for index, pt in enumerate(self.snake):
+            index_percent = index/(len(self.snake)-1)
+            blue = (1-index_percent)*255
+            green = (index_percent)*255
+            color = (0, green, blue)
+            color2 = (0, 128, blue)
+            self._display_block(color, pt)
+            self._display_block(color2, pt, BLOCK_DRAW_OFFSET)
 
         self._display_block(RED, self.food)
 
