@@ -354,8 +354,6 @@ class SnakeGameAI:
         # set snake body to one less than maximum, also will never be a distance
         for s in self.snake[1:]:
             self.dijkstra[s.y][s.x] = maximum - 1
-        # reset tail
-        self.dijkstra[self.snake[-1].y][self.snake[-1].x] = maximum
 
         steps = 0
         neighbors = []
@@ -376,3 +374,49 @@ class SnakeGameAI:
                 steps += 1
                 visited += neighbors
                 neighbors = []
+        self.shortest_dijkstra()
+
+    def shortest_dijkstra(self):
+        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
+
+        target = self.food
+        target_value = self.dijkstra[target.y][target.x]
+        if target_value == maximum:
+            target = self.snake[-1]
+            target_value = self.dijkstra[target.y][target.x]
+
+        while target_value != 1:
+            down = target + Direction.DOWN
+            left = target + Direction.LEFT
+            right = target + Direction.RIGHT
+            up = target + Direction.UP
+
+            min_value = target_value
+            if not self.is_out_of_board(down):
+                value = self.dijkstra[down.y][down.x]
+                if value < min_value:
+                    min_value = value
+                    target = down
+            if not self.is_out_of_board(right):
+                value = self.dijkstra[right.y][right.x]
+                if value < min_value:
+                    min_value = value
+                    target = right
+            if not self.is_out_of_board(left):
+                value = self.dijkstra[left.y][left.x]
+                if value < min_value:
+                    min_value = value
+                    target = left
+            if not self.is_out_of_board(up):
+                value = self.dijkstra[up.y][up.x]
+                if value < min_value:
+                    min_value = value
+                    target = up
+            target_value = self.dijkstra[target.y][target.x]
+
+        self.short_dijkstra = [
+            1 if (self.head + Direction.DOWN) == target else 0,
+            1 if (self.head + Direction.LEFT) == target else 0,
+            1 if (self.head + Direction.RIGHT) == target else 0,
+            1 if (self.head + Direction.UP) == target else 0
+        ]
