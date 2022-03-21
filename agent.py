@@ -78,7 +78,9 @@ class Agent:
 
         food_distances = game.manhattan_distances
 
-        state = must_turn + collisions + moves + food_distances
+        dijkstra_turn = game.short_dijkstra
+
+        state = must_turn + collisions + moves + food_distances + dijkstra_turn
 
         return state
 
@@ -125,8 +127,13 @@ class Agent:
 
     def get_action_heurist(self, state, game: SnakeGameAI):
         must_turn = state[0:4]
-        if sum(must_turn) == 1:
-            return must_turn
+        # if sum(must_turn) == 1:
+        #     return must_turn
+
+        dijkstra_turn = state[16:20]
+        if sum(dijkstra_turn) == 1:
+            return dijkstra_turn
+
         collisions = state[4:8]
         moves = state[8:12]
         food_distances = state[12:16]

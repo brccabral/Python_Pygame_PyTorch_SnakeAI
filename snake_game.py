@@ -3,7 +3,7 @@ import math
 from typing import Tuple
 import pygame
 import random
-from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, GREEN1, GREEN2, BLACK, BLUE1, BLUE2, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED
+from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, GREEN1, GREEN2, BLACK, BLUE1, BLUE2, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED, YELLOW1, YELLOW2
 from collections import deque
 
 
@@ -135,7 +135,7 @@ class SnakeGameAI:
         self.display = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
         self.main_window = pygame.display.get_surface()
         self.font = pygame.font.Font('arial.ttf', 25)
-        self.font_symbols = pygame.font.SysFont("DejaVu Sans", 15)
+        self.font_symbols = pygame.font.SysFont("DejaVu Sans", 12)
         self.snake = deque(maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
 
         self.reset()
@@ -231,18 +231,20 @@ class SnakeGameAI:
     def update_ui(self):
         self.display.fill(BLACK)
 
-        for r, row in enumerate(self.dijkstra):
-            for c, column in enumerate(row):
-                text = self.font_symbols.render(f'{column}', True, WHITE)
-                self.display.blit(text, [c*BLOCK_SIZE, r*BLOCK_SIZE])
-
         self._display_block(GREEN1, self.head)
         self._display_block(GREEN2, self.head, BLOCK_DRAW_OFFSET)
         for pt in self.snake[1:]:
             self._display_block(BLUE1, pt)
             self._display_block(BLUE2, pt, BLOCK_DRAW_OFFSET)
+        self._display_block(YELLOW1, self.snake[-1])
+        self._display_block(YELLOW2, self.snake[-1], BLOCK_DRAW_OFFSET)
 
         self._display_block(RED, self.food)
+
+        for r, row in enumerate(self.dijkstra):
+            for c, column in enumerate(row):
+                text = self.font_symbols.render(f'{column}', True, WHITE)
+                self.display.blit(text, [c*BLOCK_SIZE, r*BLOCK_SIZE])
 
         text = self.font.render(
             "Score: " + str(self.score), True, WHITE)
@@ -305,14 +307,15 @@ class SnakeGameAI:
                 pt = Point(x, y)
                 if self.dijkstra[pt.y][pt.x] != -1:
                     columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
-                # if pt == self.food:
-                #     columns.append('F')
-                # elif pt == self.snake[0]:
-                #     columns.append('H')
-                # elif pt in self.snake[1:]:
-                #     columns.append('X')
-                # elif pt == marker:
-                #     columns.append('M')
+
+                if pt == self.food:
+                    columns.append('F')
+                elif pt == self.snake[0]:
+                    columns.append('H')
+                elif pt in self.snake[1:]:
+                    columns.append('X')
+                elif pt == marker:
+                    columns.append('M')
                 # # elif self.traverse_path[pt.y][pt.x] != 0:
                 # #     columns.append(self._get_unicode(pt))
                 # else:
@@ -382,8 +385,25 @@ class SnakeGameAI:
         target = self.food
         target_value = self.dijkstra[target.y][target.x]
         if target_value == maximum:
-            target = self.snake[-1]
-            target_value = self.dijkstra[target.y][target.x]
+            tail = self.snake[-1]  # maximum - 1
+
+            down = tail + Direction.DOWN
+            left = tail + Direction.LEFT
+            right = tail + Direction.RIGHT
+            up = tail + Direction.UP
+            search_tail = [
+                down if not self.is_out_of_board(down) else tail,
+                left if not self.is_out_of_board(left) else tail,
+                right if not self.is_out_of_board(right) else tail,
+                up if not self.is_out_of_board(up) else tail,
+            ]
+
+            max_value = 0
+            for search in search_tail:
+                search_value = self.dijkstra[search.y][search.x]
+                if search_value > max_value and search_value < maximum - 1:
+                    target = search
+                    target_value = search_value
 
         while target_value != 1:
             down = target + Direction.DOWN
@@ -391,26 +411,21 @@ class SnakeGameAI:
             right = target + Direction.RIGHT
             up = target + Direction.UP
 
-            min_value = target_value
             if not self.is_out_of_board(down):
                 value = self.dijkstra[down.y][down.x]
-                if value < min_value:
-                    min_value = value
+                if value == target_value - 1:
                     target = down
             if not self.is_out_of_board(right):
                 value = self.dijkstra[right.y][right.x]
-                if value < min_value:
-                    min_value = value
+                if value == target_value - 1:
                     target = right
             if not self.is_out_of_board(left):
                 value = self.dijkstra[left.y][left.x]
-                if value < min_value:
-                    min_value = value
+                if value == target_value - 1:
                     target = left
             if not self.is_out_of_board(up):
                 value = self.dijkstra[up.y][up.x]
-                if value < min_value:
-                    min_value = value
+                if value == target_value - 1:
                     target = up
             target_value = self.dijkstra[target.y][target.x]
 
