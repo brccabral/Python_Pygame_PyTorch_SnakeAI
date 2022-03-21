@@ -3,7 +3,7 @@ import sys
 import argparse
 from typing import List
 import pygame
-from settings import SCREEN_WIDTH, SCREEN_HEIGHT, MAX_GENERATIONS, WHITE, Play_Type, CLOCK_SPEED
+from settings import GAME_TABLE_COLUMNS, GAME_TABLE_ROWS, SCREEN_WIDTH, SCREEN_HEIGHT, MAX_GENERATIONS, WHITE, Play_Type, CLOCK_SPEED
 
 from genetic import GeneticAlgo
 from helper import plot_genetic
@@ -82,7 +82,7 @@ def main(*args, **kwargs):
                         (genetic_algo.w, genetic_algo.h)), (SCREEN_WIDTH - 450, 0))
 
             screen.blit(pygame.transform.scale(genetic_algo.individual_highlight.game.display,
-                        (400, 240)), (SCREEN_WIDTH - 450, 300))
+                        (GAME_TABLE_COLUMNS*10, GAME_TABLE_ROWS*10)), (SCREEN_WIDTH - 450, 300))
 
             pygame.display.update()
             clock.tick(CLOCK_SPEED)
