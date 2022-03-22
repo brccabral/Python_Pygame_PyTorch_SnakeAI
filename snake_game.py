@@ -310,29 +310,29 @@ class SnakeGameAI:
                     columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
 
                 if pt == self.food:
-                    columns.append('F')
+                    columns.append('FFF')
                 elif pt == self.snake[0]:
-                    columns.append('H')
+                    columns.append('HHH')
                 elif pt in self.snake[1:]:
-                    columns.append('X')
+                    columns.append('SSS')
                 elif pt == marker:
-                    columns.append('M')
-                # # elif self.traverse_path[pt.y][pt.x] != 0:
-                # #     columns.append(self._get_unicode(pt))
-                # else:
-                #     columns.append('_')
+                    columns.append('MMM')
             rows.append("|".join(columns))
         return "\n".join(rows)
 
     def _get_unicode(self, pt: Point):
+        pt = pt.unit()
         if pt.x % 2 == 0 and pt.y % 2:
-            return '\u25F0'
-        if pt.x % 2 and pt.y % 2:
-            return '\u25F1'
-        if pt.x % 2 == 0 and pt.y % 2 == 0:
-            return '\u25F3'
-        if pt.x % 2 and pt.y % 2 == 0:
-            return '\u25F2'
+            code = '\u25F0'
+        elif pt.x % 2 and pt.y % 2:
+            code = '\u25F1'
+        elif pt.x % 2 == 0 and pt.y % 2 == 0:
+            code = '\u25F3'
+        elif pt.x % 2 and pt.y % 2 == 0:
+            code = '\u25F2'
+        else:
+            code = ' '
+        return code
 
     def is_gap(self):
         directions = self.head.allowed_directions()
