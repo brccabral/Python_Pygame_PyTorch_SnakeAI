@@ -1,6 +1,6 @@
 import datetime
 import math
-from typing import Tuple
+from typing import List, Tuple
 import pygame
 import random
 from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, BLACK, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED
@@ -16,27 +16,29 @@ class Point:
         return f"Point(x:{self.x}, y:{self.y})"
 
     def __add__(self, other: "Point"):
-        if type(other) != Point:
-            return False
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         return Point(self.x+other.x, self.y+other.y)
 
     def __sub__(self, other: "Point"):
-        if type(other) != Point:
-            return False
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         return Point(self.x-other.x, self.y-other.y)
 
     def __eq__(self, other: "Point"):
-        if type(other) != Point:
-            return False
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         return self.x == other.x and self.y == other.y
 
     def distance(self, other: "Point") -> int:
-        if type(other) != Point:
-            return False
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         return abs(self.x-other.x) + abs(self.y-other.y)
 
-    def target_directions(self, target: "Point"):
-        fd = target - self
+    def target_directions(self, other: "Point"):
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
+        fd = other - self
         if fd.x < 0:
             x = -1
         elif fd.x > 0:
@@ -72,11 +74,15 @@ class Point:
         return Point(self.x * other.x, self.y * other.y)
 
     def __and__(self, other: "Point"):
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         horizontal = self.x if other.x != 0 else 0
         vertical = self.y if other.y != 0 else 0
         return Point(horizontal, vertical)
 
     def dot(self, other: "Point"):
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         mul = self * other
         return mul.x + mul.y
 
@@ -84,6 +90,8 @@ class Point:
         return math.sqrt(pow(self.x, 2) + pow(self.y, 2))
 
     def cos_teta(self, other: "Point"):
+        if type(other) != Point and type(other) != Direction:
+            raise TypeError(f'Type {type(other)} invalid')
         if other == Point(0, 0):
             return -1
         return self.dot(other)/(self.magnitude()*other.magnitude())
@@ -137,6 +145,8 @@ class SnakeGameAI:
         self.font = pygame.font.Font('arial.ttf', 25)
         self.font_symbols = pygame.font.SysFont("DejaVu Sans", 12)
         self.snake = deque(maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
+        self.turns = [Direction.DOWN,
+                      Direction.LEFT, Direction.RIGHT, Direction.UP]
 
         self.reset()
 
@@ -289,26 +299,46 @@ class SnakeGameAI:
         else:
             self.direction = Direction.DOWN
 
-        self.head = Point(GAME_TABLE_COLUMNS//2, GAME_TABLE_ROWS//2)
+        self.head = Point(GAME_TABLE_COLUMNS//2+1, GAME_TABLE_ROWS//2)
         self.snake = [self.head,
-                      Point(self.head.x-self.direction.x,
-                            self.head.y-self.direction.y)]
+                      self.head - self.direction]
         self.score = len(self.snake)
 
         self.food = None
         self._place_food()
+
+        self.direction = Direction.RIGHT
+        self.snake = [self.head,
+                      self.head + Direction.LEFT,
+                      self.head + Direction.LEFT + Direction.LEFT,
+                      self.head + Direction.LEFT + Direction.LEFT + Direction.LEFT,
+                      self.head + Direction.LEFT + Direction.LEFT + Direction.LEFT + Direction.DOWN,
+                      self.head + Direction.LEFT + Direction.LEFT +
+                      Direction.LEFT + Direction.DOWN + Direction.DOWN,
+                      self.head + Direction.LEFT + Direction.LEFT +
+                      Direction.LEFT + Direction.DOWN + Direction.DOWN + Direction.DOWN,
+                      self.head + Direction.LEFT + Direction.LEFT +
+                      Direction.DOWN + Direction.DOWN + Direction.DOWN,
+                      self.head + Direction.LEFT + Direction.DOWN + Direction.DOWN + Direction.DOWN,
+                      self.head + Direction.DOWN + Direction.DOWN + Direction.DOWN,
+                      self.head + Direction.DOWN + Direction.DOWN + Direction.DOWN + Direction.RIGHT,
+                      self.head + Direction.DOWN + Direction.DOWN +
+                      Direction.DOWN + Direction.RIGHT + Direction.RIGHT,
+                      self.head + Direction.DOWN + Direction.DOWN + Direction.RIGHT + Direction.RIGHT,
+                      self.head + Direction.DOWN + Direction.RIGHT + Direction.RIGHT,
+                      ]
+        self.food = Point(18, 18)
+        self.score = len(self.snake)
+
         self._get_distances()
         self._create_dijkstra()
 
-    def get_board(self, marker: Point = None):
+    def get_board(self, marker: Point = Point(-1, -1)):
         rows = []
         for y in range(GAME_TABLE_ROWS):
             columns = []
             for x in range(GAME_TABLE_COLUMNS):
                 pt = Point(x, y)
-                if self.dijkstra[pt.y][pt.x] != -1:
-                    columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
-
                 if pt == self.food:
                     columns.append('FFF')
                 elif pt == self.snake[0]:
@@ -317,6 +347,9 @@ class SnakeGameAI:
                     columns.append('SSS')
                 elif pt == marker:
                     columns.append('MMM')
+                elif self.dijkstra[pt.y][pt.x] != -1:
+                    columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
+
             rows.append("|".join(columns))
         return "\n".join(rows)
 
@@ -337,7 +370,7 @@ class SnakeGameAI:
     def is_gap(self):
         directions = self.head.allowed_directions()
         if directions.x == 0 or directions.y == 0:
-            return False
+            return Point(0, 0)
 
         target_point = self.head + directions + self.direction
         turn_point = self.head + directions - self.direction
@@ -345,7 +378,7 @@ class SnakeGameAI:
         if (target_point) in self.snake and not self.is_collision(turn_point):
             return directions - self.direction
 
-        return False
+        return Point(0, 0)
 
     def _create_dijkstra(self):
         # the distance will never be this value, we can use it as control number
@@ -379,10 +412,12 @@ class SnakeGameAI:
                 visited += neighbors
                 neighbors = []
         self.shortest_dijkstra()
+        self.dijkstra_gap()
 
     def shortest_dijkstra(self):
         maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
 
+        # target can be the food or the tail
         target = self.food
         target_value = self.dijkstra[target.y][target.x]
         if target_value == maximum:
@@ -436,3 +471,69 @@ class SnakeGameAI:
             1 if (self.head + Direction.RIGHT) == target else 0,
             1 if (self.head + Direction.UP) == target else 0
         ]
+
+    def dijkstra_gap(self):
+        # similar to dijkstra, but don't need to
+
+        if sum(self.short_dijkstra) == 0:
+            return
+
+        # get the suggested turn
+        turn = self.turns[self.short_dijkstra.index(1)]
+
+        # get the other possible turn
+        allowed_directions = self.head.allowed_directions()
+        other_turn = allowed_directions - turn
+
+        # start at other turn
+        current = self.head + other_turn
+        # check if other turn is collision
+        if self.is_collision(current):
+            return
+
+        # save the next move to reset it later
+        control = self.head + turn
+        if control == self.food:
+            return
+        control_value = self.dijkstra[control.y][control.x]
+        # invalidate next move
+        maximum = GAME_TABLE_COLUMNS * GAME_TABLE_ROWS
+        self.dijkstra[control.y][control.x] = maximum - 1
+        self.dijkstra[self.head.y][self.head.x] = maximum - 1
+
+        # start at other turn
+        neighbors: List[Point] = []
+        working = [current]
+        visited: List[Point] = []
+        found_food = False
+        while len(working) > 0:
+            current = working.pop()
+            if current == self.food:
+                found_food = True
+                break
+            visited.append(current)
+
+            for turn in self.turns:
+                move = current + turn
+                if not self.is_out_of_board(move) and self.dijkstra[move.y][move.x] < maximum - 1 and move not in neighbors and move not in visited and move not in working:
+                    neighbors.append(move)
+
+            neighbors = sorted(
+                neighbors, key=lambda pt: pt.distance(self.food))
+
+            if len(working) == 0 and len(neighbors) > 0:
+                working += neighbors
+                neighbors = []
+
+        # revert to original control value
+        self.dijkstra[control.y][control.x] = control_value
+        self.dijkstra[self.head.y][self.head.x] = 0
+
+        # if it can't reach the food, it is a gap
+        if not found_food:
+            self.short_dijkstra = [
+                1 if other_turn == Direction.DOWN else 0,
+                1 if other_turn == Direction.LEFT else 0,
+                1 if other_turn == Direction.RIGHT else 0,
+                1 if other_turn == Direction.UP else 0,
+            ]

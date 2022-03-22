@@ -22,9 +22,6 @@ class Agent:
         self.trainer: QTrainer = QTrainer(
             lr=lr, gamma=self.gamma, input_size=input_size, hidden_size=hidden_size)
 
-        self.directions = [Direction.DOWN,
-                           Direction.LEFT, Direction.RIGHT, Direction.UP]
-
     def __repr__(self):
         return f'Agent(games:{self.number_of_games}, epsilon:{self.epsilon},' \
             f' inp:{self.input_size}, hid:{self.hidden_size}, lr:{self.lr})'
