@@ -425,19 +425,9 @@ class SnakeGameAI:
 
         # target can be the food or the tail
         target = self.board.food
-        target_value = self.dijkstra[target.y][target.x]
         if target_value == maximum:
-            tail = self.snake.body[-1]  # maximum - 1
-
-            search_tail = [
-                tail+turn if not self.board.is_out_of_board(tail+turn) else tail for turn in self.turns]
-
-            max_value = 0
-            for search in search_tail:
-                search_value = self.dijkstra[search.y][search.x]
-                if search_value > max_value and search_value < maximum - 1:
-                    target = search
-                    target_value = search_value
+            target = self.snake.tail
+        target_value = self.dijkstra[target.y][target.x]
 
         while target_value != 1:
 
