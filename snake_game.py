@@ -155,6 +155,7 @@ class Snake:
         self.body.insert(0, self.head)
         if self.head != food:
             self.body.pop()
+        self.tail = self.body[-1]
 
     def reset(self):
         # init game state
@@ -175,6 +176,7 @@ class Snake:
             maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
         self.body.append(self.head)
         self.body.append(self.head-self.direction)
+        self.tail = self.body[-1]
 
     def is_hit(self, pt: Point):
         if pt == self.head:
@@ -385,6 +387,8 @@ class SnakeGameAI:
         # set snake body to one less than maximum, also will never be a distance
         for s in list(itertools.islice(self.snake.body, 1, len(self.snake))):
             self.dijkstra[s.y][s.x] = maximum - 1
+        # reset tail
+        self.dijkstra[self.snake.tail.y][self.snake.tail.x] = maximum
 
         steps = 0
         neighbors = []
@@ -405,9 +409,9 @@ class SnakeGameAI:
                 (current_direction & Direction.HORIZONTAL)
             next_attempt_v = current + \
                 (current_direction & Direction.VERTICAL)
-            if not self.is_collision(next_attempt_h) and self.dijkstra[next_attempt_h.y][next_attempt_h.x] == maximum and next_attempt_h not in neighbors:
+            if (not self.is_collision(next_attempt_h) or next_attempt_h == self.snake.tail) and self.dijkstra[next_attempt_h.y][next_attempt_h.x] == maximum and next_attempt_h not in neighbors:
                 neighbors.append(next_attempt_h)
-            if not self.is_collision(next_attempt_v) and self.dijkstra[next_attempt_v.y][next_attempt_v.x] == maximum and next_attempt_v not in neighbors:
+            if (not self.is_collision(next_attempt_v) or next_attempt_v == self.snake.tail) and self.dijkstra[next_attempt_v.y][next_attempt_v.x] == maximum and next_attempt_v not in neighbors:
                 neighbors.append(next_attempt_v)
             if len(visited) == 0 and len(neighbors) > 0:
                 steps += 1
