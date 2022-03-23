@@ -389,10 +389,16 @@ class SnakeGameAI:
         steps = 0
         neighbors = []
         visited = [self.snake.head]
+        found_food = False
+        found_tail = False
         while len(visited) > 0:
             current = visited.pop()
             self.dijkstra[current.y][current.x] = steps
             if current == self.board.food:
+                found_food = True
+            if current == self.snake.body[-1]:
+                found_tail = True
+            if found_food and found_tail:
                 break
             current_direction = current.allowed_directions()
             next_attempt_h = current + \
@@ -419,16 +425,8 @@ class SnakeGameAI:
         if target_value == maximum:
             tail = self.snake.body[-1]  # maximum - 1
 
-            down = tail + Direction.DOWN
-            left = tail + Direction.LEFT
-            right = tail + Direction.RIGHT
-            up = tail + Direction.UP
             search_tail = [
-                down if not self.board.is_out_of_board(down) else tail,
-                left if not self.board.is_out_of_board(left) else tail,
-                right if not self.board.is_out_of_board(right) else tail,
-                up if not self.board.is_out_of_board(up) else tail,
-            ]
+                tail+turn if not self.board.is_out_of_board(tail+turn) else tail for turn in self.turns]
 
             max_value = 0
             for search in search_tail:
@@ -438,35 +436,17 @@ class SnakeGameAI:
                     target_value = search_value
 
         while target_value != 1:
-            down = target + Direction.DOWN
-            left = target + Direction.LEFT
-            right = target + Direction.RIGHT
-            up = target + Direction.UP
 
-            if not self.board.is_out_of_board(down):
-                value = self.dijkstra[down.y][down.x]
-                if value == target_value - 1:
-                    target = down
-            if not self.board.is_out_of_board(right):
-                value = self.dijkstra[right.y][right.x]
-                if value == target_value - 1:
-                    target = right
-            if not self.board.is_out_of_board(left):
-                value = self.dijkstra[left.y][left.x]
-                if value == target_value - 1:
-                    target = left
-            if not self.board.is_out_of_board(up):
-                value = self.dijkstra[up.y][up.x]
-                if value == target_value - 1:
-                    target = up
+            for turn in self.turns:
+                next_move = target + turn
+                if not self.board.is_out_of_board(next_move):
+                    value = self.dijkstra[next_move.y][next_move.x]
+                    if value == target_value - 1:
+                        target = next_move
             target_value = self.dijkstra[target.y][target.x]
 
         self.short_dijkstra = [
-            1 if (self.snake.head + Direction.DOWN) == target else 0,
-            1 if (self.snake.head + Direction.LEFT) == target else 0,
-            1 if (self.snake.head + Direction.RIGHT) == target else 0,
-            1 if (self.snake.head + Direction.UP) == target else 0
-        ]
+            int((self.snake.head+turn) == target) for turn in self.turns]
 
     def dijkstra_gap(self):
         # similar to dijkstra, but don't need to
