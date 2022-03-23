@@ -1,6 +1,7 @@
 import datetime
+import itertools
 import math
-from typing import List, Tuple
+from typing import Deque, List, Tuple
 import pygame
 import random
 from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, BLACK, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED
@@ -136,6 +137,76 @@ class Direction:
             return current_direction
 
 
+class Snake:
+    def __init__(self):
+        self.reset()
+
+    def __len__(self):
+        return len(self.body)
+
+    def move(self, action: List[int], food: Point):
+        """move snake head to new position
+
+        Args:
+            action (list): list of integers that will determine where to move the snake. [down, left, right, up]
+        """
+        self.direction = Direction.get_direction(self.direction, action)
+        self.head = self.head + self.direction
+        self.body.insert(0, self.head)
+        if self.head != food:
+            self.body.pop()
+
+    def reset(self):
+        # init game state
+        direction = random.randint(0, 3)
+        if direction == 0:
+            self.direction = Direction.LEFT
+        elif direction == 1:
+            self.direction = Direction.UP
+        elif direction == 2:
+            self.direction = Direction.RIGHT
+        else:
+            self.direction = Direction.DOWN
+
+        x = random.randint(1, GAME_TABLE_COLUMNS-2)
+        y = random.randint(1, GAME_TABLE_ROWS-2)
+        self.head = Point(x, y)
+        self.body: Deque[Point] = deque(
+            maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
+        self.body.append(self.head)
+        self.body.append(self.head-self.direction)
+
+    def is_hit(self, pt: Point):
+        if pt == self.head:
+            return pt in list(itertools.islice(self.body, 1, len(self.body)))
+        return pt in self.body
+
+
+class Board:
+    def __init__(self, max_rows: int, max_columns: int, snake: Snake):
+        self.max_rows = max_rows
+        self.max_columns = max_columns
+        self.reset(snake)
+
+    def random_point(self):
+        x = random.randint(0, self.max_columns-1)
+        y = random.randint(0, self.max_rows-1)
+        return Point(x, y)
+
+    def place_food(self, snake: Snake):
+        self.food = self.random_point()
+        while self.food in snake.body:
+            self.food = self.random_point()
+
+    def is_out_of_board(self, pt: Point):
+        if pt.x < 0 or pt.y < 0 or pt.x > self.max_columns-1 or pt.y > self.max_rows-1:
+            return True
+        return False
+
+    def reset(self, snake: Snake):
+        self.place_food(snake)
+
+
 class SnakeGameAI:
 
     def __init__(self):
@@ -144,20 +215,12 @@ class SnakeGameAI:
         self.main_window = pygame.display.get_surface()
         self.font = pygame.font.Font('arial.ttf', 25)
         self.font_symbols = pygame.font.SysFont("DejaVu Sans", 12)
-        self.snake = deque(maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
         self.turns = [Direction.DOWN,
                       Direction.LEFT, Direction.RIGHT, Direction.UP]
+        self.snake = Snake()
+        self.board = Board(GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, self.snake)
 
         self.reset()
-
-    def _place_food(self):
-        x = self.head.x
-        y = self.head.y
-        self.food = Point(x, y)
-        while self.food in self.snake:
-            x = random.randint(0, GAME_TABLE_COLUMNS-1)
-            y = random.randint(0, GAME_TABLE_ROWS-1)
-            self.food = Point(x, y)
 
     def play_step(self, action):
         """receives an action from the agent and updates the game
@@ -173,17 +236,16 @@ class SnakeGameAI:
             self.count_steps += 1
 
             # 2. move
-            self._move(action)  # update the head
+            self.snake.move(action, self.board.food)  # update the head
 
             # 3. check if game over
-            if self.is_collision():
+            if self.is_collision(self.snake.head):
                 self.game_over = True
                 reward = -10
-                self.snake.pop()
                 return reward, self.game_over, self.score
 
             # 4. place new food or just move
-            if self.head == self.food:
+            if self.snake.head == self.board.food:
                 self.score += 1
                 self.total_steps += self.count_steps
                 print(
@@ -191,12 +253,10 @@ class SnakeGameAI:
                 reward = 10
                 self.count_steps = 0
                 if len(self.snake) < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS:
-                    self._place_food()
+                    self.board.place_food(self.snake)
                 else:
                     self.game_over = True
                     return reward, self.game_over, self.score
-            else:
-                self.snake.pop()
 
             self._get_distances()
             self._create_dijkstra()
@@ -205,43 +265,25 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, self.game_over, self.score
 
-    def is_collision(self, pt: Point = None):
-        if pt is None:
-            pt = self.head
-
+    def is_collision(self, pt: Point):
         # hits boundary
-        if self.is_out_of_board(pt):
+        if self.board.is_out_of_board(pt):
             return True
-        # hits itself
-        if pt in self.snake[1:]:
-            return True
-
-        return False
-
-    def food_distance(self, pt: Point = None) -> int:
-        if self.is_collision(pt):
-            return -1
-        head_distance = self.manhattan_distance(self.snake[0])
-        point_distance = self.manhattan_distance(pt)
-        return int((head_distance - point_distance) > 0)
-
-    def is_out_of_board(self, pt: Point):
-        if pt.x < 0 or pt.y < 0 or pt.x > GAME_TABLE_COLUMNS-1 or pt.y > GAME_TABLE_ROWS-1:
-            return True
-        return False
+        # hits snake
+        return self.snake.is_hit(pt)
 
     def _get_distances(self):
         self.manhattan_distances = [
-            (self.head + Direction.DOWN).distance(self.food),
-            (self.head + Direction.LEFT).distance(self.food),
-            (self.head + Direction.RIGHT).distance(self.food),
-            (self.head + Direction.UP).distance(self.food)
+            (self.snake.head + Direction.DOWN).distance(self.board.food),
+            (self.snake.head + Direction.LEFT).distance(self.board.food),
+            (self.snake.head + Direction.RIGHT).distance(self.board.food),
+            (self.snake.head + Direction.UP).distance(self.board.food)
         ]
 
     def update_ui(self):
         self.display.fill(BLACK)
 
-        for index, pt in enumerate(self.snake):
+        for index, pt in enumerate(self.snake.body):
             index_percent = index/(len(self.snake)-1)
             blue = (1-index_percent)*255
             green = (index_percent)*255
@@ -250,7 +292,7 @@ class SnakeGameAI:
             self._display_block(color, pt)
             self._display_block(color2, pt, BLOCK_DRAW_OFFSET)
 
-        self._display_block(RED, self.food)
+        self._display_block(RED, self.board.food)
 
         for r, row in enumerate(self.dijkstra):
             for c, column in enumerate(row):
@@ -265,18 +307,6 @@ class SnakeGameAI:
         pygame.draw.rect(self.display, color, pygame.Rect(
             point.x*BLOCK_SIZE + offset, point.y*BLOCK_SIZE + offset, BLOCK_SIZE-2*offset, BLOCK_SIZE-2*offset))
 
-    def _move(self, action):
-        """move snake head to new position
-
-        Args:
-            action (list): list of integers that will determine where to move the snake. [down, left, right, up]
-        """
-        self.direction = Direction.get_direction(self.direction, action)
-
-        self.head = Point(self.head.x + self.direction.x,
-                          self.head.y + self.direction.y)
-        self.snake.insert(0, self.head)
-
     def reset(self):
         """reset is called at __init__ and by AI agent
         """
@@ -288,46 +318,10 @@ class SnakeGameAI:
 
         self.game_over = False
 
-        # init game state
-        direction = random.randint(0, 3)
-        if direction == 0:
-            self.direction = Direction.LEFT
-        elif direction == 1:
-            self.direction = Direction.UP
-        elif direction == 2:
-            self.direction = Direction.RIGHT
-        else:
-            self.direction = Direction.DOWN
+        self.snake.reset()
 
-        self.head = Point(GAME_TABLE_COLUMNS//2+1, GAME_TABLE_ROWS//2)
-        self.snake = [self.head,
-                      self.head - self.direction]
-        self.score = len(self.snake)
+        self.board.reset(self.snake)
 
-        self.food = None
-        self._place_food()
-
-        self.direction = Direction.RIGHT
-        self.snake = [self.head,
-                      self.head + Direction.LEFT,
-                      self.head + Direction.LEFT + Direction.LEFT,
-                      self.head + Direction.LEFT + Direction.LEFT + Direction.LEFT,
-                      self.head + Direction.LEFT + Direction.LEFT + Direction.LEFT + Direction.DOWN,
-                      self.head + Direction.LEFT + Direction.LEFT +
-                      Direction.LEFT + Direction.DOWN + Direction.DOWN,
-                      self.head + Direction.LEFT + Direction.LEFT +
-                      Direction.LEFT + Direction.DOWN + Direction.DOWN + Direction.DOWN,
-                      self.head + Direction.LEFT + Direction.LEFT +
-                      Direction.DOWN + Direction.DOWN + Direction.DOWN,
-                      self.head + Direction.LEFT + Direction.DOWN + Direction.DOWN + Direction.DOWN,
-                      self.head + Direction.DOWN + Direction.DOWN + Direction.DOWN,
-                      self.head + Direction.DOWN + Direction.DOWN + Direction.DOWN + Direction.RIGHT,
-                      self.head + Direction.DOWN + Direction.DOWN +
-                      Direction.DOWN + Direction.RIGHT + Direction.RIGHT,
-                      self.head + Direction.DOWN + Direction.DOWN + Direction.RIGHT + Direction.RIGHT,
-                      self.head + Direction.DOWN + Direction.RIGHT + Direction.RIGHT,
-                      ]
-        self.food = Point(18, 18)
         self.score = len(self.snake)
 
         self._get_distances()
@@ -339,11 +333,11 @@ class SnakeGameAI:
             columns = []
             for x in range(GAME_TABLE_COLUMNS):
                 pt = Point(x, y)
-                if pt == self.food:
+                if pt == self.board.food:
                     columns.append('FFF')
-                elif pt == self.snake[0]:
+                elif pt == self.snake.head:
                     columns.append('HHH')
-                elif pt in self.snake[1:]:
+                elif pt in list(itertools.islice(self.snake.body, 1, len(self.snake))):
                     columns.append('SSS')
                 elif pt == marker:
                     columns.append('MMM')
@@ -368,15 +362,15 @@ class SnakeGameAI:
         return code
 
     def is_gap(self):
-        directions = self.head.allowed_directions()
+        directions = self.snake.head.allowed_directions()
         if directions.x == 0 or directions.y == 0:
             return Point(0, 0)
 
-        target_point = self.head + directions + self.direction
-        turn_point = self.head + directions - self.direction
+        target_point = self.snake.head + directions + self.snake.direction
+        turn_point = self.snake.head + directions - self.snake.direction
 
-        if (target_point) in self.snake and not self.is_collision(turn_point):
-            return directions - self.direction
+        if (target_point) in self.snake.body and not self.is_collision(turn_point):
+            return directions - self.snake.direction
 
         return Point(0, 0)
 
@@ -387,17 +381,19 @@ class SnakeGameAI:
             GAME_TABLE_COLUMNS)] for r in range(GAME_TABLE_ROWS)]
 
         # set head to 0
-        self.dijkstra[self.head.y][self.head.x] = 0
+        self.dijkstra[self.snake.head.y][self.snake.head.x] = 0
         # set snake body to one less than maximum, also will never be a distance
-        for s in self.snake[1:]:
+        for s in list(itertools.islice(self.snake.body, 1, len(self.snake))):
             self.dijkstra[s.y][s.x] = maximum - 1
 
         steps = 0
         neighbors = []
-        visited = [self.head]
+        visited = [self.snake.head]
         while len(visited) > 0:
             current = visited.pop()
             self.dijkstra[current.y][current.x] = steps
+            if current == self.board.food:
+                break
             current_direction = current.allowed_directions()
             next_attempt_h = current + \
                 (current_direction & Direction.HORIZONTAL)
@@ -412,26 +408,26 @@ class SnakeGameAI:
                 visited += neighbors
                 neighbors = []
         self.shortest_dijkstra()
-        self.dijkstra_gap()
+        # self.dijkstra_gap()
 
     def shortest_dijkstra(self):
         maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
 
         # target can be the food or the tail
-        target = self.food
+        target = self.board.food
         target_value = self.dijkstra[target.y][target.x]
         if target_value == maximum:
-            tail = self.snake[-1]  # maximum - 1
+            tail = self.snake.body[-1]  # maximum - 1
 
             down = tail + Direction.DOWN
             left = tail + Direction.LEFT
             right = tail + Direction.RIGHT
             up = tail + Direction.UP
             search_tail = [
-                down if not self.is_out_of_board(down) else tail,
-                left if not self.is_out_of_board(left) else tail,
-                right if not self.is_out_of_board(right) else tail,
-                up if not self.is_out_of_board(up) else tail,
+                down if not self.board.is_out_of_board(down) else tail,
+                left if not self.board.is_out_of_board(left) else tail,
+                right if not self.board.is_out_of_board(right) else tail,
+                up if not self.board.is_out_of_board(up) else tail,
             ]
 
             max_value = 0
@@ -447,29 +443,29 @@ class SnakeGameAI:
             right = target + Direction.RIGHT
             up = target + Direction.UP
 
-            if not self.is_out_of_board(down):
+            if not self.board.is_out_of_board(down):
                 value = self.dijkstra[down.y][down.x]
                 if value == target_value - 1:
                     target = down
-            if not self.is_out_of_board(right):
+            if not self.board.is_out_of_board(right):
                 value = self.dijkstra[right.y][right.x]
                 if value == target_value - 1:
                     target = right
-            if not self.is_out_of_board(left):
+            if not self.board.is_out_of_board(left):
                 value = self.dijkstra[left.y][left.x]
                 if value == target_value - 1:
                     target = left
-            if not self.is_out_of_board(up):
+            if not self.board.is_out_of_board(up):
                 value = self.dijkstra[up.y][up.x]
                 if value == target_value - 1:
                     target = up
             target_value = self.dijkstra[target.y][target.x]
 
         self.short_dijkstra = [
-            1 if (self.head + Direction.DOWN) == target else 0,
-            1 if (self.head + Direction.LEFT) == target else 0,
-            1 if (self.head + Direction.RIGHT) == target else 0,
-            1 if (self.head + Direction.UP) == target else 0
+            1 if (self.snake.head + Direction.DOWN) == target else 0,
+            1 if (self.snake.head + Direction.LEFT) == target else 0,
+            1 if (self.snake.head + Direction.RIGHT) == target else 0,
+            1 if (self.snake.head + Direction.UP) == target else 0
         ]
 
     def dijkstra_gap(self):
@@ -482,24 +478,24 @@ class SnakeGameAI:
         turn = self.turns[self.short_dijkstra.index(1)]
 
         # get the other possible turn
-        allowed_directions = self.head.allowed_directions()
+        allowed_directions = self.snake.head.allowed_directions()
         other_turn = allowed_directions - turn
 
         # start at other turn
-        current = self.head + other_turn
+        current = self.snake.head + other_turn
         # check if other turn is collision
         if self.is_collision(current):
             return
 
         # save the next move to reset it later
-        control = self.head + turn
-        if control == self.food:
+        control = self.snake.head + turn
+        if control == self.board.food:
             return
         control_value = self.dijkstra[control.y][control.x]
         # invalidate next move
         maximum = GAME_TABLE_COLUMNS * GAME_TABLE_ROWS
         self.dijkstra[control.y][control.x] = maximum - 1
-        self.dijkstra[self.head.y][self.head.x] = maximum - 1
+        self.dijkstra[self.snake.head.y][self.snake.head.x] = maximum - 1
 
         # start at other turn
         neighbors: List[Point] = []
@@ -508,18 +504,18 @@ class SnakeGameAI:
         found_food = False
         while len(working) > 0:
             current = working.pop()
-            if current == self.food:
+            if current == self.board.food:
                 found_food = True
                 break
             visited.append(current)
 
             for turn in self.turns:
                 move = current + turn
-                if not self.is_out_of_board(move) and self.dijkstra[move.y][move.x] < maximum - 1 and move not in neighbors and move not in visited and move not in working:
+                if not self.board.is_out_of_board(move) and self.dijkstra[move.y][move.x] < maximum - 1 and move not in neighbors and move not in visited and move not in working:
                     neighbors.append(move)
 
             neighbors = sorted(
-                neighbors, key=lambda pt: pt.distance(self.food))
+                neighbors, key=lambda pt: pt.distance(self.board.food))
 
             if len(working) == 0 and len(neighbors) > 0:
                 working += neighbors
@@ -527,7 +523,7 @@ class SnakeGameAI:
 
         # revert to original control value
         self.dijkstra[control.y][control.x] = control_value
-        self.dijkstra[self.head.y][self.head.x] = 0
+        self.dijkstra[self.snake.head.y][self.snake.head.x] = 0
 
         # if it can't reach the food, it is a gap
         if not found_food:

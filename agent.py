@@ -42,7 +42,7 @@ class Agent:
         Returns:
             list: booleans for each game condition
         """
-        head = game.snake[0]
+        head = game.snake.head
 
         right = head+Direction.RIGHT
         left = head+Direction.LEFT
