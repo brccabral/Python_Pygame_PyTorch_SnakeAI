@@ -264,8 +264,7 @@ class SnakeGameAI:
 
             self._get_distances()
             self._create_dijkstra()
-            # self.traverse_table()
-            # self.towards_food()
+
         # 6. return game over and score
         return reward, self.game_over, self.score
 
@@ -401,10 +400,13 @@ class SnakeGameAI:
         found_food = False
         found_tail = False
         while len(working) > 0:
+            working = sorted(
+                working, key=lambda pt: pt.distance(self.board.food), reverse=True)
             current = working.pop()
             self.dijkstra[current.y][current.x] = steps
             if current == self.board.food:
                 found_food = True
+                break
             if current == self.snake.tail:
                 found_tail = True
             if found_food and found_tail:
@@ -424,8 +426,6 @@ class SnakeGameAI:
             if len(working) == 0 and len(neighbors) > 0:
                 steps += 1
                 working += neighbors
-                working = sorted(
-                    working, key=lambda pt: pt.distance(self.board.food))
                 neighbors = []
         self.shortest_dijkstra()
         self.dijkstra_gap()
@@ -439,13 +439,14 @@ class SnakeGameAI:
             target = self.snake.tail
 
         while self.dijkstra[target.y][target.x] != 1:
-            for turn in self.turns:
-                next_target = target + turn
-                if not self.board.is_out_of_board(next_target):
-                    value = self.dijkstra[next_target.y][next_target.x]
+            moves = [target + turn for turn in self.turns]
+            moves = sorted(moves, key=lambda pt: pt.distance(self.snake.head))
+            for move in moves:
+                if not self.board.is_out_of_board(move):
+                    value = self.dijkstra[move.y][move.x]
                     if value == self.dijkstra[target.y][target.x] - 1:
                         break
-            target = next_target
+            target = move
 
         self.short_dijkstra = [
             int((self.snake.head+turn) == target) for turn in self.turns]
@@ -475,13 +476,18 @@ class SnakeGameAI:
             if self.snake.is_hit(control + turn) and not self.snake.is_hit(self.snake.head + turn):
                 pass
 
+        food_dijkstra = 0
+        if self.dijkstra[self.board.food.y][self.board.food.x] < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS - 1:
+            food_dijkstra = self.dijkstra[self.board.food.y][self.board.food.x]
+
         # start at other turn
         working = [current]
         visited = [current]
         found_tail = False
+        highest_snake_index = 0
         while len(working) > 0:
             working = sorted(
-                working, key=lambda pt: pt.distance(self.snake.tail))
+                working, key=lambda pt: pt.distance(self.snake.tail), reverse=True)
 
             current = working.pop()
             if current == self.snake.tail:
@@ -494,10 +500,19 @@ class SnakeGameAI:
                 if (not self.is_collision(move) or move == self.snake.tail) and move not in visited and move != control and move != self.snake.head:
                     working.append(move)
                     visited.append(move)
+                elif self.snake.is_hit(move):
+                    snake_index = self.snake.body.index(move)
+                    if snake_index > highest_snake_index:
+                        highest_snake_index = snake_index
 
             if len(visited) > len(self.snake):
                 found_tail = True
                 break
+
+        # if the tail was not found, but the steps to get to the food is greater
+        # than the number of steps the tail has to do to get there, it is not a gap
+        if not found_tail and food_dijkstra > len(self.snake) - highest_snake_index:
+            found_tail = True
 
         # if it can't reach the tail, it is a gap
         if not found_tail:
