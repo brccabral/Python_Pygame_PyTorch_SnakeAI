@@ -57,10 +57,10 @@ class Agent:
             1 if is_gap == Direction.UP else 0
         ]
 
-        collisions = [0 if game.is_collision(down) else 1,
-                      0 if game.is_collision(left) else 1,
-                      0 if game.is_collision(right) else 1,
-                      0 if game.is_collision(up) else 1]
+        collisions = [0 if game.board.is_collision(down) else 1,
+                      0 if game.board.is_collision(left) else 1,
+                      0 if game.board.is_collision(right) else 1,
+                      0 if game.board.is_collision(up) else 1]
 
         moves = [0, 0, 0, 0]
         if head.y % 2:

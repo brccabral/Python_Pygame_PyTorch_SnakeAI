@@ -1,6 +1,7 @@
 import datetime
 import itertools
 import math
+import re
 from typing import Deque, List, Tuple
 import pygame
 import random
@@ -180,16 +181,12 @@ class Snake:
         self.body.append(self.head-self.direction)
         self.tail = self.body[-1]
 
-    def is_hit(self, pt: Point):
-        if pt == self.head:
-            return pt in self.body[1:]
-        return pt in self.body
-
 
 class Board:
     def __init__(self, max_rows: int, max_columns: int, snake: Snake):
         self.max_rows = max_rows
         self.max_columns = max_columns
+        self.maximum = max_rows * max_columns
         self.reset(snake)
 
     def random_point(self):
@@ -199,7 +196,7 @@ class Board:
 
     def place_food(self, snake: Snake):
         self.food = self.random_point()
-        while self.food in snake.body:
+        while self.grid[self.food.y][self.food.x] == self.maximum-1 or self.food == snake.head:
             self.food = self.random_point()
 
     def is_out_of_board(self, pt: Point):
@@ -207,8 +204,25 @@ class Board:
             return True
         return False
 
+    def update_board(self, snake: Snake):
+        self.grid = [[self.maximum - 1 if Point(c, r) in snake.body else self.maximum for c in range(
+            self.max_columns)] for r in range(self.max_rows)]
+        self.grid[snake.head.y][snake.head.x] = self.maximum
+
     def reset(self, snake: Snake):
+        self.update_board(snake)
         self.place_food(snake)
+
+    def is_collision(self, pt: Point):
+        if self.is_out_of_board(pt):
+            return True
+        if self.is_hit(pt):
+            return True
+        return False
+
+    def is_hit(self, pt: Point):
+        if self.grid[pt.y][pt.x] == self.maximum-1:
+            return True
 
 
 class SnakeGameAI:
@@ -241,9 +255,10 @@ class SnakeGameAI:
 
             # 2. move
             self.snake.move(action, self.board.food)  # update the head
+            self.board.update_board(self.snake)
 
             # 3. check if game over
-            if self.is_collision(self.snake.head):
+            if self.board.is_collision(self.snake.head):
                 self.game_over = True
                 reward = -10
                 return reward, self.game_over, self.score
@@ -267,13 +282,6 @@ class SnakeGameAI:
 
         # 6. return game over and score
         return reward, self.game_over, self.score
-
-    def is_collision(self, pt: Point):
-        # hits boundary
-        if self.board.is_out_of_board(pt):
-            return True
-        # hits snake
-        return self.snake.is_hit(pt)
 
     def _get_distances(self):
         self.manhattan_distances = [
@@ -301,7 +309,7 @@ class SnakeGameAI:
         for r, row in enumerate(self.dijkstra):
             for c, value in enumerate(row):
                 pt = Point(c, r)
-                if self.snake.is_hit(pt):
+                if self.board.is_collision(pt):
                     value = self.snake.body.index(pt)
                 if value < maximum - 1:
                     text = self.font_symbols.render(f'{value}', True, WHITE)
@@ -347,7 +355,7 @@ class SnakeGameAI:
                     columns.append('FFF')
                 elif pt == self.snake.head:
                     columns.append('HHH')
-                elif self.snake.is_hit(pt):
+                elif self.board.is_collision(pt):
                     columns.append('SSS')
                 elif self.dijkstra[pt.y][pt.x] != -1:
                     columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
@@ -377,17 +385,17 @@ class SnakeGameAI:
         target_point = self.snake.head + directions + self.snake.direction
         turn_point = self.snake.head + directions - self.snake.direction
 
-        if (target_point) in self.snake.body and not self.is_collision(turn_point):
+        if (target_point) in self.snake.body and not self.board.is_collision(turn_point):
             return directions - self.snake.direction
 
         return Point(0, 0)
 
     def _create_dijkstra(self):
         # the distance will never be this value, we can use it as control number
-        maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
+        maximum = self.board.maximum
         # set snake body to one less than maximum, also will never be a distance
-        self.dijkstra = [[maximum-1 if self.snake.is_hit(Point(c, r)) else maximum for c in range(
-            GAME_TABLE_COLUMNS)] for r in range(GAME_TABLE_ROWS)]
+        self.dijkstra = [[maximum-1 if self.board.is_collision(Point(c, r)) else maximum for c in range(
+            self.board.max_columns)] for r in range(self.board.max_rows)]
 
         # set head to 0
         self.dijkstra[self.snake.head.y][self.snake.head.x] = 0
@@ -397,20 +405,20 @@ class SnakeGameAI:
         steps = 0
         neighbors = []
         working = [self.snake.head]
-        found_food = False
-        found_tail = False
+        # found_food = False
+        # found_tail = False
         while len(working) > 0:
             working = sorted(
                 working, key=lambda pt: pt.distance(self.board.food), reverse=True)
             current = working.pop()
             self.dijkstra[current.y][current.x] = steps
             if current == self.board.food:
-                found_food = True
+                # found_food = True
                 break
-            if current == self.snake.tail:
-                found_tail = True
-            if found_food and found_tail:
-                break
+            # if current == self.snake.tail:
+            #     found_tail = True
+            # if found_food and found_tail:
+            #     break
             current_direction = current.allowed_directions()
             next_attempt_h = current + \
                 (current_direction & Direction.HORIZONTAL)
@@ -468,13 +476,8 @@ class SnakeGameAI:
         # start at other turn
         current = self.snake.head + other_turn
         # check if other turn is collision
-        if self.is_collision(current):
+        if self.board.is_collision(current):
             return
-
-        for turn in [Direction.DOWN, Direction.DOWN+Direction.LEFT, Direction.LEFT, Direction.LEFT+Direction.UP,
-                     Direction.UP, Direction.UP+Direction.RIGHT, Direction.RIGHT, Direction.RIGHT+Direction.DOWN]:
-            if self.snake.is_hit(control + turn) and not self.snake.is_hit(self.snake.head + turn):
-                pass
 
         food_dijkstra = 0
         if self.dijkstra[self.board.food.y][self.board.food.x] < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS - 1:
@@ -497,10 +500,10 @@ class SnakeGameAI:
             for turn in self.turns:
                 move = current + turn
 
-                if (not self.is_collision(move) or move == self.snake.tail) and move not in visited and move != control and move != self.snake.head:
+                if (not self.board.is_collision(move) or move == self.snake.tail) and move not in visited and move != control and move != self.snake.head:
                     working.append(move)
                     visited.append(move)
-                elif self.snake.is_hit(move):
+                elif not self.board.is_out_of_board(move) and self.board.is_hit(move):
                     snake_index = self.snake.body.index(move)
                     if snake_index > highest_snake_index:
                         highest_snake_index = snake_index
