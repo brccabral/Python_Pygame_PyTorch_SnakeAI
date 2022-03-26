@@ -175,15 +175,14 @@ class Snake:
         x = random.randint(1, GAME_TABLE_COLUMNS-2)
         y = random.randint(1, GAME_TABLE_ROWS-2)
         self.head = Point(x, y)
-        self.body: Deque[Point] = deque(
-            maxlen=GAME_TABLE_COLUMNS*GAME_TABLE_ROWS)
+        self.body = []
         self.body.append(self.head)
         self.body.append(self.head-self.direction)
         self.tail = self.body[-1]
 
     def is_hit(self, pt: Point):
         if pt == self.head:
-            return pt in list(itertools.islice(self.body, 1, len(self.body)))
+            return pt in self.body[1:]
         return pt in self.body
 
 
@@ -286,6 +285,7 @@ class SnakeGameAI:
         ]
 
     def update_ui(self):
+        maximum = GAME_TABLE_COLUMNS * GAME_TABLE_ROWS
         self.display.fill(BLACK)
 
         for index, pt in enumerate(self.snake.body):
@@ -299,9 +299,14 @@ class SnakeGameAI:
 
         self._display_block(RED, self.board.food)
 
-        for pt, value in self.dijkstra_dict.items():
-            text = self.font_symbols.render(f'{value}', True, WHITE)
-            self.display.blit(text, [pt.x*BLOCK_SIZE, pt.y*BLOCK_SIZE])
+        for r, row in enumerate(self.dijkstra):
+            for c, value in enumerate(row):
+                pt = Point(c, r)
+                if self.snake.is_hit(pt):
+                    value = self.snake.body.index(pt)
+                if value < maximum - 1:
+                    text = self.font_symbols.render(f'{value}', True, WHITE)
+                    self.display.blit(text, [pt.x*BLOCK_SIZE, pt.y*BLOCK_SIZE])
 
         text = self.font.render(
             "Score: " + str(self.score), True, WHITE)
@@ -343,10 +348,10 @@ class SnakeGameAI:
                     columns.append('FFF')
                 elif pt == self.snake.head:
                     columns.append('HHH')
-                elif pt in list(itertools.islice(self.snake.body, 1, len(self.snake))):
+                elif self.snake.is_hit(pt):
                     columns.append('SSS')
-                elif self.dijkstra_dict[pt] != -1:
-                    columns.append(f'{self.dijkstra_dict[pt]:03}')
+                elif self.dijkstra[pt.y][pt.x] != -1:
+                    columns.append(f'{self.dijkstra[pt.y][pt.x]:03}')
 
             rows.append("|".join(columns))
         return "\n".join(rows)
@@ -381,28 +386,26 @@ class SnakeGameAI:
     def _create_dijkstra(self):
         # the distance will never be this value, we can use it as control number
         maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
-        self.dijkstra_dict = {Point(x, y): maximum for y in range(
-            GAME_TABLE_COLUMNS) for x in range(GAME_TABLE_ROWS)}
+        # set snake body to one less than maximum, also will never be a distance
+        self.dijkstra = [[maximum-1 if self.snake.is_hit(Point(c, r)) else maximum for c in range(
+            GAME_TABLE_COLUMNS)] for r in range(GAME_TABLE_ROWS)]
 
         # set head to 0
-        self.dijkstra_dict[self.snake.head] = 0
-        # set snake body to one less than maximum, also will never be a distance
-        for s in list(itertools.islice(self.snake.body, 1, len(self.snake))):
-            self.dijkstra_dict[s] = maximum - 1
+        self.dijkstra[self.snake.head.y][self.snake.head.x] = 0
         # reset tail
-        self.dijkstra_dict[self.snake.tail] = maximum
+        self.dijkstra[self.snake.tail.y][self.snake.tail.x] = maximum
 
         steps = 0
         neighbors = []
-        visited = [self.snake.head]
+        working = [self.snake.head]
         found_food = False
         found_tail = False
-        while len(visited) > 0:
-            current = visited.pop()
-            self.dijkstra_dict[current] = steps
+        while len(working) > 0:
+            current = working.pop()
+            self.dijkstra[current.y][current.x] = steps
             if current == self.board.food:
                 found_food = True
-            if current == self.snake.body[-1]:
+            if current == self.snake.tail:
                 found_tail = True
             if found_food and found_tail:
                 break
@@ -411,32 +414,36 @@ class SnakeGameAI:
                 (current_direction & Direction.HORIZONTAL)
             next_attempt_v = current + \
                 (current_direction & Direction.VERTICAL)
-            if (not self.is_collision(next_attempt_h) or next_attempt_h == self.snake.tail) and self.dijkstra_dict[next_attempt_h] == maximum and next_attempt_h not in neighbors:
+            if not self.board.is_out_of_board(next_attempt_h) and self.dijkstra[next_attempt_h.y][next_attempt_h.x] == maximum:
+                self.dijkstra[next_attempt_h.y][next_attempt_h.x] = steps + 1
                 neighbors.append(next_attempt_h)
-            if (not self.is_collision(next_attempt_v) or next_attempt_v == self.snake.tail) and self.dijkstra_dict[next_attempt_v] == maximum and next_attempt_v not in neighbors:
+            if not self.board.is_out_of_board(next_attempt_v) and self.dijkstra[next_attempt_v.y][next_attempt_v.x] == maximum:
+                self.dijkstra[next_attempt_v.y][next_attempt_v.x] = steps + 1
                 neighbors.append(next_attempt_v)
-            if len(visited) == 0 and len(neighbors) > 0:
+
+            if len(working) == 0 and len(neighbors) > 0:
                 steps += 1
-                visited += neighbors
+                working += neighbors
+                working = sorted(
+                    working, key=lambda pt: pt.distance(self.board.food))
                 neighbors = []
         self.shortest_dijkstra()
-        # self.dijkstra_gap()
+        self.dijkstra_gap()
 
     def shortest_dijkstra(self):
         maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
 
         # target can be the food or the tail
         target = self.board.food
-        if self.dijkstra_dict[target] == maximum:
+        if self.dijkstra[target.y][target.x] == maximum:
             target = self.snake.tail
 
-        next_target = target
-        while self.dijkstra_dict[target] != 1:
+        while self.dijkstra[target.y][target.x] != 1:
             for turn in self.turns:
                 next_target = target + turn
                 if not self.board.is_out_of_board(next_target):
-                    value = self.dijkstra_dict[next_target]
-                    if value == self.dijkstra_dict[target] - 1:
+                    value = self.dijkstra[next_target.y][next_target.x]
+                    if value == self.dijkstra[target.y][target.x] - 1:
                         break
             target = next_target
 
@@ -444,17 +451,18 @@ class SnakeGameAI:
             int((self.snake.head+turn) == target) for turn in self.turns]
 
     def dijkstra_gap(self):
-        # similar to dijkstra, but don't need to
 
+        # if can't find shortest path to target
         if sum(self.short_dijkstra) == 0:
             return
 
         # get the suggested turn
-        turn = self.turns[self.short_dijkstra.index(1)]
+        suggested_turn = self.turns[self.short_dijkstra.index(1)]
+        control = self.snake.head + suggested_turn
 
         # get the other possible turn
         allowed_directions = self.snake.head.allowed_directions()
-        other_turn = allowed_directions - turn
+        other_turn = allowed_directions - suggested_turn
 
         # start at other turn
         current = self.snake.head + other_turn
@@ -462,46 +470,37 @@ class SnakeGameAI:
         if self.is_collision(current):
             return
 
-        # save the next move to reset it later
-        control = self.snake.head + turn
-        if control == self.board.food:
-            return
-        control_value = self.dijkstra_dict[control]
-        # invalidate next move
-        maximum = GAME_TABLE_COLUMNS * GAME_TABLE_ROWS
-        self.dijkstra_dict[control] = maximum - 1
-        self.dijkstra_dict[self.snake.head] = maximum - 1
+        for turn in [Direction.DOWN, Direction.DOWN+Direction.LEFT, Direction.LEFT, Direction.LEFT+Direction.UP,
+                     Direction.UP, Direction.UP+Direction.RIGHT, Direction.RIGHT, Direction.RIGHT+Direction.DOWN]:
+            if self.snake.is_hit(control + turn) and not self.snake.is_hit(self.snake.head + turn):
+                pass
 
         # start at other turn
-        neighbors: List[Point] = []
         working = [current]
-        visited: List[Point] = []
-        found_food = False
+        visited = [current]
+        found_tail = False
         while len(working) > 0:
+            working = sorted(
+                working, key=lambda pt: pt.distance(self.snake.tail))
+
             current = working.pop()
-            if current == self.board.food:
-                found_food = True
+            if current == self.snake.tail:
+                found_tail = True
                 break
-            visited.append(current)
 
             for turn in self.turns:
                 move = current + turn
-                if not self.board.is_out_of_board(move) and self.dijkstra_dict[move] < maximum - 1 and move not in neighbors and move not in visited and move not in working:
-                    neighbors.append(move)
 
-            neighbors = sorted(
-                neighbors, key=lambda pt: pt.distance(self.board.food))
+                if (not self.is_collision(move) or move == self.snake.tail) and move not in visited and move != control and move != self.snake.head:
+                    working.append(move)
+                    visited.append(move)
 
-            if len(working) == 0 and len(neighbors) > 0:
-                working += neighbors
-                neighbors = []
+            if len(visited) > len(self.snake):
+                found_tail = True
+                break
 
-        # revert to original control value
-        self.dijkstra_dict[control] = control_value
-        self.dijkstra_dict[self.snake.head] = 0
-
-        # if it can't reach the food, it is a gap
-        if not found_food:
+        # if it can't reach the tail, it is a gap
+        if not found_tail:
             self.short_dijkstra = [
                 1 if other_turn == Direction.DOWN else 0,
                 1 if other_turn == Direction.LEFT else 0,
