@@ -1,5 +1,6 @@
+from __future__ import annotations
 import random
-from typing import List
+from typing import List, Union
 
 from settings import GAME_TABLE_COLUMNS, GAME_TABLE_ROWS
 
@@ -13,17 +14,24 @@ class Point:
         return f"Point(x:{self.x}, y:{self.y})"
 
     def __add__(self, other: "Point"):
-        if type(other) != Point and type(other) != Direction:
+        if type(other) != Point:
             raise TypeError(f'Type {type(other)} invalid')
         return Point(self.x+other.x, self.y+other.y)
 
     def __sub__(self, other: "Point"):
-        if type(other) != Point and type(other) != Direction:
+        if type(other) != Point:
             raise TypeError(f'Type {type(other)} invalid')
         return Point(self.x-other.x, self.y-other.y)
 
+    def __and__(self, other: "Point"):
+        if type(other) != Point:
+            raise TypeError(f'Type {type(other)} invalid')
+        horizontal = self.x if other.x != 0 else 0
+        vertical = self.y if other.y != 0 else 0
+        return Point(horizontal, vertical)
+
     def __eq__(self, other: "Point"):
-        if type(other) != Point and type(other) != Direction:
+        if type(other) != Point:
             raise TypeError(f'Type {type(other)} invalid')
         return self.x == other.x and self.y == other.y
 
@@ -31,12 +39,12 @@ class Point:
         return hash((self.x, self.y))
 
     def distance(self, other: "Point") -> int:
-        if type(other) != Point and type(other) != Direction:
+        if type(other) != Point:
             raise TypeError(f'Type {type(other)} invalid')
         return abs(self.x-other.x) + abs(self.y-other.y)
 
     def target_directions(self, other: "Point"):
-        if type(other) != Point and type(other) != Direction:
+        if type(other) != Point:
             raise TypeError(f'Type {type(other)} invalid')
         fd = other - self
         if fd.x < 0:
@@ -72,13 +80,6 @@ class Point:
         if type(other) == int:
             return Point(self.x * other, self.y * other)
         return Point(self.x * other.x, self.y * other.y)
-
-    def __and__(self, other: "Point"):
-        if type(other) != Point and type(other) != Direction:
-            raise TypeError(f'Type {type(other)} invalid')
-        horizontal = self.x if other.x != 0 else 0
-        vertical = self.y if other.y != 0 else 0
-        return Point(horizontal, vertical)
 
     def dot(self, other: "Point"):
         if type(other) != Point and type(other) != Direction:
@@ -136,12 +137,46 @@ class Node:
         # return f"{self.point} Next: {self.next.point if self.next.point is not None else ''} Prev: {self.prev.point if self.prev.point is not None else ''}"
         return f"{self.point}"
 
+    def __eq__(self, other: Union[Point, Node]) -> bool:
+        if type(other) == Point:
+            return self.point == other
+        if type(other) == Node:
+            return self.point == other.point
+        raise TypeError(f'Type {type(other)} invalid')
+
+    def __add__(self, other: Union[Point, Node]) -> Point:
+        if type(other) == Point:
+            return self.point + other
+        if type(other) == Node:
+            return self.point + other.point
+        raise TypeError(f'Type {type(other)} invalid')
+
+    def __sub__(self, other: Union[Point, Node]) -> Point:
+        if type(other) == Point:
+            return self.point - other
+        if type(other) == Node:
+            return self.point - other.point
+        raise TypeError(f'Type {type(other)} invalid')
+
+    def __and__(self, other: Union[Point, Node]) -> Point:
+        if type(other) == Point:
+            return self.point & other
+        if type(other) == Node:
+            return self.point & other.point
+        raise TypeError(f'Type {type(other)} invalid')
+
 
 class SnakeLinkedList:
-    def __init__(self):
+    def __init__(self, max_rows: int, max_columns: int):
+        self.max_rows = max_rows
+        self.max_columns = max_columns
+        self.maximum = max_rows * max_columns
+
         self.head: Node = None
         self.tail: Node = None
         self._length = 0
+
+        self.food: Point = None
 
     def add_head(self, newdata: Point):
         new_node = Node(newdata)
@@ -157,18 +192,19 @@ class SnakeLinkedList:
         self._length -= 1
         return self.tail
 
-    def is_hit(self, pt: Point):
-        current = self.head.next
-        while current is not None:
-            if current.point == pt:
+    def is_hit_list(self, pt: Point):
+        if pt == self.head:
+            return False
+
+        for current in self:
+            if current == pt:
                 return True
-            current = current.next
         return False
 
-    def move(self, action: List[int], food: Point):
+    def move(self, action: List[int]):
         self.direction = Direction.get_direction(self.direction, action)
         self.add_head(self.head.point + self.direction)
-        if self.head.point != food:
+        if self.head != self.food:
             self.remove_tail()
 
     def reset(self):
@@ -197,8 +233,65 @@ class SnakeLinkedList:
         self.tail.prev = self.head
         self._length = 2
 
+        self.update_board()
+        self.place_food()
+
     def __len__(self):
-        return self.length
+        return self._length
 
     def __repr__(self):
         return f"{self.head} Length: {self._length}"
+
+    def __iter__(self):
+        current = self.head
+        while current is not None:
+            yield current
+            current = current.next
+
+    def random_point(self):
+        x = random.randint(0, self.max_columns-1)
+        y = random.randint(0, self.max_rows-1)
+        return Point(x, y)
+
+    def place_food(self):
+        self.food = self.random_point()
+        while self.grid[self.food.y][self.food.x] == self.maximum-1 or self.head == self.food:
+            self.food = self.random_point()
+
+    def is_out_of_board(self, pt: Union[Point, Node]):
+        if type(pt) == Node:
+            pt = pt.point
+        if pt.x < 0 or pt.y < 0 or pt.x > self.max_columns-1 or pt.y > self.max_rows-1:
+            return True
+        return False
+
+    def update_board(self):
+        self.grid = [[self.maximum for c in range(
+            self.max_columns)] for r in range(self.max_rows)]
+
+        for current in self:
+            self.grid[current.point.y][current.point.x] = self.maximum - 1
+
+        # reset head
+        self.grid[self.head.point.y][self.head.point.x] = self.maximum
+
+    def is_collision(self, pt: Union[Point, Node]):
+        if type(pt) == Node:
+            pt = pt.point
+        if self.is_out_of_board(pt):
+            return True
+        if self.is_hit(pt):
+            return True
+        return False
+
+    def is_hit(self, pt: Union[Point, Node]):
+        if type(pt) == Node:
+            pt = pt.point
+        if self.grid[pt.y][pt.x] == self.maximum-1:
+            return True
+
+    def get_snake_index(self, pt: Point):
+        for value, node in enumerate(self):
+            if node == pt:
+                return value
+        raise LookupError(f'Point {pt} not in snake')

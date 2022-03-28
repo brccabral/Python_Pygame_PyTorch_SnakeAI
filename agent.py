@@ -42,25 +42,25 @@ class Agent:
         Returns:
             list: booleans for each game condition
         """
-        head = game.snake.head
+        head = game.snake_list.head
 
         right = head+Direction.RIGHT
         left = head+Direction.LEFT
         down = head+Direction.DOWN
         up = head+Direction.UP
 
-        collisions = [0 if game.board.is_collision(down) else 1,
-                      0 if game.board.is_collision(left) else 1,
-                      0 if game.board.is_collision(right) else 1,
-                      0 if game.board.is_collision(up) else 1]
+        collisions = [0 if game.snake_list.is_collision(down) else 1,
+                      0 if game.snake_list.is_collision(left) else 1,
+                      0 if game.snake_list.is_collision(right) else 1,
+                      0 if game.snake_list.is_collision(up) else 1]
 
         moves = [0, 0, 0, 0]
-        if head.y % 2:
+        if head.point.y % 2:
             moves[1] = 1  # left
         else:
             moves[2] = 1  # right
 
-        if head.x % 2:
+        if head.point.x % 2:
             moves[0] = 1  # down
         else:
             moves[3] = 1  # up

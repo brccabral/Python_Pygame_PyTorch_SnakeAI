@@ -252,7 +252,7 @@ class Individual:
             self.display_padding
 
     def update_fitness(self):
-        self.fitness = pow(len(self.game.snake), 2)
+        self.fitness = pow(len(self.game.snake_list), 2)
 
     def copy(self, order):
         new_copy = Individual(SnakeGameAI(), order=order, number_of_agents=self.number_of_agents,
