@@ -269,13 +269,13 @@ class SnakeGameAI:
                 if self.snake_list.is_out_of_board(move):
                     continue
 
-                if (not self.snake_list.is_collision(move) or self.snake_list.tail == move) and move not in visited and move != control and self.snake_list.head != move:
-                    working.append(move)
-                    visited.append(move)
-                elif self.snake_list.is_hit(move):
+                if self.snake_list.is_hit(move) and self.snake_list.tail != move:
                     snake_index = self.snake_list.get_snake_index(move)
                     if snake_index > highest_snake_index:
                         highest_snake_index = snake_index
+                elif move not in visited and move != control and self.snake_list.head != move:
+                    working.append(move)
+                    visited.append(move)
 
             if len(visited) > len(self.snake_list):
                 found_tail = True
