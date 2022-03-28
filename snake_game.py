@@ -75,14 +75,17 @@ class SnakeGameAI:
         maximum = GAME_TABLE_COLUMNS * GAME_TABLE_ROWS
         self.display.fill(BLACK)
 
-        for index, pt in enumerate(self.snake_list):
-            index_percent = index/(len(self.snake_list)-1)
+        for index, pt in enumerate(self.snake_list.body):
+            index_percent = index/(len(self.snake_list.body)-1)
             blue = (1-index_percent)*255
             green = (index_percent)*255
             color = (0, green, blue)
             color2 = (0, 128, blue)
-            self._display_block(color, pt.point)
-            self._display_block(color2, pt.point, BLOCK_DRAW_OFFSET)
+            self._display_block(color, pt)
+            self._display_block(color2, pt, BLOCK_DRAW_OFFSET)
+            text = self.font_symbols.render(f'{index}', True, WHITE)
+            self.display.blit(
+                text, [pt.x*BLOCK_SIZE, pt.y*BLOCK_SIZE])
 
         self._display_block(RED, self.snake_list.food)
 
@@ -92,11 +95,6 @@ class SnakeGameAI:
                 if value < maximum - 1:
                     text = self.font_symbols.render(f'{value}', True, WHITE)
                     self.display.blit(text, [pt.x*BLOCK_SIZE, pt.y*BLOCK_SIZE])
-
-        for index, node in enumerate(self.snake_list):
-            text = self.font_symbols.render(f'{index}', True, WHITE)
-            self.display.blit(
-                text, [node.point.x*BLOCK_SIZE, node.point.y*BLOCK_SIZE])
 
         text = self.font.render(
             "Score: " + str(self.score), True, WHITE)
@@ -169,13 +167,13 @@ class SnakeGameAI:
             self.snake_list.max_columns)] for r in range(self.snake_list.max_rows)]
 
         # set head to 0
-        self.dijkstra[self.snake_list.head.point.y][self.snake_list.head.point.x] = 0
+        self.dijkstra[self.snake_list.head.y][self.snake_list.head.x] = 0
         # reset tail
-        self.dijkstra[self.snake_list.tail.point.y][self.snake_list.tail.point.x] = maximum
+        self.dijkstra[self.snake_list.tail.y][self.snake_list.tail.x] = maximum
 
         steps = 0
         neighbors = []
-        working = [self.snake_list.head.point]
+        working = [self.snake_list.head]
         # found_food = False
         # found_tail = False
         while len(working) > 0:
@@ -210,12 +208,12 @@ class SnakeGameAI:
         # target can be the food or the tail
         target = self.snake_list.food
         if self.dijkstra[target.y][target.x] == maximum:
-            target = self.snake_list.tail.point
+            target = self.snake_list.tail
 
         while self.dijkstra[target.y][target.x] != 1:
             moves = [target + turn for turn in self.turns]
             moves = sorted(moves, key=lambda pt: pt.distance(
-                self.snake_list.head.point))
+                self.snake_list.head))
             for move in moves:
                 if not self.snake_list.is_out_of_board(move):
                     value = self.dijkstra[move.y][move.x]
@@ -237,7 +235,7 @@ class SnakeGameAI:
         control: Point = self.snake_list.head + suggested_turn
 
         # get the other possible turn
-        allowed_directions = self.snake_list.head.point.allowed_directions()
+        allowed_directions = self.snake_list.head.allowed_directions()
         other_turn: Point = allowed_directions - suggested_turn
 
         # start at other turn
@@ -257,7 +255,7 @@ class SnakeGameAI:
         highest_snake_index = 0
         while len(working) > 0:
             working = sorted(
-                working, key=lambda pt: pt.distance(self.snake_list.tail.point), reverse=True)
+                working, key=lambda pt: pt.distance(self.snake_list.tail), reverse=True)
 
             current = working.pop()
             if self.snake_list.tail == current:
