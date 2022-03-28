@@ -201,9 +201,10 @@ class AI_Play_Type(Agent_Play_Type):
 
 
 class Individual:
-    def __init__(self, game: SnakeGameAI, order: int, number_of_agents: int, play_type: Play_Type,
+    def __init__(self, display_gui, order: int, number_of_agents: int, play_type: Play_Type,
                  lr: float, mutation_prob: float, mutation_rate: float, input_size: int, hidden_size: int):
-        self.game = game
+        self.display_gui = display_gui
+        self.game = SnakeGameAI(display_gui)
         self.game_over = False
         self.reward = 0
         self.score = 0
@@ -255,7 +256,7 @@ class Individual:
         self.fitness = pow(len(self.game.snake_list), 2)
 
     def copy(self, order):
-        new_copy = Individual(SnakeGameAI(), order=order, number_of_agents=self.number_of_agents,
+        new_copy = Individual(self.display_gui, order=order, number_of_agents=self.number_of_agents,
                               play_type=self.play_type, lr=self.lr, mutation_prob=self.mutation_prob,
                               mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
         new_copy.agent_play_type = self.agent_play_type.copy()
@@ -294,7 +295,8 @@ class Individual:
 
 class GeneticAlgo:
     def __init__(self, number_of_agents: int, play_type: Play_Type, lr: float, mutation_prob: float,
-                 mutation_rate: float, input_size: int, hidden_size: int, display_stats_w: int = 350, display_stats_h: int = 480):
+                 mutation_rate: float, input_size: int, hidden_size: int, display_stats_w: int = 350, display_stats_h: int = 480,
+                 display_gui: bool = False):
         self.population_size = number_of_agents
         self.play_type = play_type
         self.lr = lr
@@ -309,20 +311,21 @@ class GeneticAlgo:
         self.total_board_size = length_x*length_y
 
         self.population: List[Individual] = None
-        self.generate_population()
+        self.generate_population(display_gui)
         self.total_game_over = 0
 
         # init display stats
         self.w = display_stats_w
         self.h = display_stats_h
-        self.display_stats = pygame.Surface((self.w, self.h))
-        self.font = pygame.font.Font('arial.ttf', 25)
         self.best_score_all_time = 0
         self.best_score_generation = 0
         self.best_individual_order: int = 0
         self.generation_count = 0
         self.individual_save: Individual = None
         self.neurons_colors = [BLACK, RED]
+        if display_gui:
+            self.display_stats = pygame.Surface((self.w, self.h))
+            self.font = pygame.font.Font('arial.ttf', 25)
 
     def update_stats(self, individual: Individual):
         if individual.score > self.best_score_all_time:
@@ -342,13 +345,13 @@ class GeneticAlgo:
     def __repr__(self):
         return f'Genetic Pop={self.population_size} LR={self.lr} Hidden={self.hidden_size}'
 
-    def generate_population(self):
+    def generate_population(self, display_gui):
         self.population = [self.new_individual(
-            i) for i in range(self.population_size)]
+            i, display_gui) for i in range(self.population_size)]
         self.individual_highlight = self.population[0]
 
-    def new_individual(self, order):
-        return Individual(SnakeGameAI(), order=order, number_of_agents=self.population_size, play_type=self.play_type, lr=self.lr, mutation_prob=self.mutation_prob, mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
+    def new_individual(self, order, display_gui):
+        return Individual(display_gui, order=order, number_of_agents=self.population_size, play_type=self.play_type, lr=self.lr, mutation_prob=self.mutation_prob, mutation_rate=self.mutation_rate, input_size=self.input_size, hidden_size=self.hidden_size)
 
     def new_population(self) -> List[Individual]:
         if len(self.population) == 1:

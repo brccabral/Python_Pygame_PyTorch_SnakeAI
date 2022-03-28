@@ -1,5 +1,4 @@
 import datetime
-import enum
 from typing import Tuple
 import pygame
 from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, BLACK, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED
@@ -8,12 +7,13 @@ from linked_list import Point, Direction, SnakeLinkedList
 
 class SnakeGameAI:
 
-    def __init__(self):
+    def __init__(self, display_gui):
         # init display
-        self.display = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
-        self.main_window = pygame.display.get_surface()
-        self.font = pygame.font.Font('arial.ttf', 25)
-        self.font_symbols = pygame.font.SysFont("DejaVu Sans", 12)
+        if display_gui:
+            self.display = pygame.Surface((GAME_WIDTH, GAME_HEIGHT))
+            self.main_window = pygame.display.get_surface()
+            self.font = pygame.font.Font('arial.ttf', 25)
+            self.font_symbols = pygame.font.SysFont("DejaVu Sans", 12)
         self.turns = [Direction.DOWN,
                       Direction.LEFT, Direction.RIGHT, Direction.UP]
         self.snake_list = SnakeLinkedList(GAME_TABLE_ROWS, GAME_TABLE_COLUMNS)

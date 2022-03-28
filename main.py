@@ -10,8 +10,8 @@ from helper import plot_genetic
 
 
 def main(*args, **kwargs):
-    pygame.init()
     if kwargs['display_gui']:
+        pygame.init()
         screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption('SnakeAI')
         clock = pygame.time.Clock()
@@ -19,7 +19,7 @@ def main(*args, **kwargs):
     genetic_algo = GeneticAlgo(
         number_of_agents=kwargs['number_of_agents'], play_type=kwargs['play_type'],
         lr=kwargs['lr'], input_size=kwargs['input_size'], hidden_size=kwargs['hidden_size'],
-        mutation_prob=kwargs['mutation_prob'], mutation_rate=kwargs['mutation_rate'])
+        mutation_prob=kwargs['mutation_prob'], mutation_rate=kwargs['mutation_rate'], display_gui=kwargs['display_gui'])
 
     user_event = None
     best_all_times: List[int] = []
@@ -90,8 +90,8 @@ def main(*args, **kwargs):
     print(
         f'best_score_all_time {genetic_algo.best_score_all_time} generation_count {genetic_algo.generation_count}')
 
-    # if kwargs['display_gui']:
-    pygame.quit()
+    if kwargs['display_gui']:
+        pygame.quit()
 
 
 if __name__ == "__main__":
