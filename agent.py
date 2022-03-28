@@ -49,14 +49,6 @@ class Agent:
         down = head+Direction.DOWN
         up = head+Direction.UP
 
-        is_gap = game.is_gap()
-        must_turn = [
-            1 if is_gap == Direction.DOWN else 0,
-            1 if is_gap == Direction.LEFT else 0,
-            1 if is_gap == Direction.RIGHT else 0,
-            1 if is_gap == Direction.UP else 0
-        ]
-
         collisions = [0 if game.board.is_collision(down) else 1,
                       0 if game.board.is_collision(left) else 1,
                       0 if game.board.is_collision(right) else 1,
@@ -77,7 +69,7 @@ class Agent:
 
         dijkstra_turn = game.short_dijkstra
 
-        state = must_turn + collisions + moves + food_distances + dijkstra_turn
+        state = dijkstra_turn + collisions + moves + food_distances
 
         return state
 
@@ -123,11 +115,7 @@ class Agent:
         return action
 
     def get_action_heurist(self, state, game: SnakeGameAI):
-        must_turn = state[0:4]
-        # if sum(must_turn) == 1:
-        #     return must_turn
-
-        dijkstra_turn = state[16:20]
+        dijkstra_turn = state[0:4]
         if sum(dijkstra_turn) == 1:
             return dijkstra_turn
 

@@ -3,13 +3,10 @@ from typing import List, Tuple
 import pygame
 import random
 from settings import GAME_WIDTH, GAME_HEIGHT, GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, BLACK, BLOCK_SIZE, BLOCK_DRAW_OFFSET, WHITE, RED
-from linked_list import Point, Direction
+from linked_list import Point, Direction, SnakeLinkedList
 
 
 class Snake:
-    def __init__(self):
-        self.reset()
-
     def __len__(self):
         return len(self.body)
 
@@ -52,7 +49,6 @@ class Board:
         self.max_rows = max_rows
         self.max_columns = max_columns
         self.maximum = max_rows * max_columns
-        self.reset(snake)
 
     def random_point(self):
         x = random.randint(0, self.max_columns-1)
@@ -101,6 +97,7 @@ class SnakeGameAI:
         self.turns = [Direction.DOWN,
                       Direction.LEFT, Direction.RIGHT, Direction.UP]
         self.snake = Snake()
+        self.snake_list = SnakeLinkedList()
         self.board = Board(GAME_TABLE_ROWS, GAME_TABLE_COLUMNS, self.snake)
 
         self.reset()
@@ -200,6 +197,7 @@ class SnakeGameAI:
         self.game_over = False
 
         self.snake.reset()
+        self.snake_list.reset()
 
         self.board.reset(self.snake)
 
@@ -241,19 +239,6 @@ class SnakeGameAI:
         else:
             code = ' '
         return code
-
-    def is_gap(self):
-        directions = self.snake.head.allowed_directions()
-        if directions.x == 0 or directions.y == 0:
-            return Point(0, 0)
-
-        target_point = self.snake.head + directions + self.snake.direction
-        turn_point = self.snake.head + directions - self.snake.direction
-
-        if (target_point) in self.snake.body and not self.board.is_collision(turn_point):
-            return directions - self.snake.direction
-
-        return Point(0, 0)
 
     def _create_dijkstra(self):
         # the distance will never be this value, we can use it as control number
