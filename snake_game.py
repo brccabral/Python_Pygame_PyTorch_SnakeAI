@@ -288,9 +288,5 @@ class SnakeGameAI:
 
         # if it can't reach the tail, it is a gap
         if not found_tail:
-            self.short_dijkstra = [
-                1 if other_turn == Direction.DOWN else 0,
-                1 if other_turn == Direction.LEFT else 0,
-                1 if other_turn == Direction.RIGHT else 0,
-                1 if other_turn == Direction.UP else 0,
-            ]
+            self.short_dijkstra = [int(other_turn == turn)
+                                   for turn in self.turns]
