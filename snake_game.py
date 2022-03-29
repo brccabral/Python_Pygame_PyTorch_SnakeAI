@@ -18,6 +18,9 @@ class SnakeGameAI:
                       Direction.LEFT, Direction.RIGHT, Direction.UP]
         self.snake_list = SnakeLinkedList(GAME_TABLE_ROWS, GAME_TABLE_COLUMNS)
 
+        # go_to: strategy to look for corners before foodd
+        self.go_to: Point = None
+
         self.reset()
 
     def play_step(self, action):
@@ -53,15 +56,55 @@ class SnakeGameAI:
                 self.count_steps = 0
                 if len(self.snake_list) < GAME_TABLE_COLUMNS*GAME_TABLE_ROWS:
                     self.snake_list.place_food()
+                    self.update_go_to()
                 else:
                     self.game_over = True
                     return reward, self.game_over, self.score
+            elif self.snake_list.head == self.go_to:
+                self.update_go_to()
 
             self._get_distances()
             self._create_dijkstra()
 
         # 6. return game over and score
         return reward, self.game_over, self.score
+
+    def update_go_to_corner(self, corner: Point):
+        """Called when head reached food"""
+        current = corner
+        working = [current]
+        visited = [current]
+        while len(working) > 0:
+            working = sorted(
+                working, key=lambda pt: pt.distance(corner), reverse=True)
+            current = working.pop()
+            if self.snake_list.grid[current.y][current.x] == self.snake_list.maximum:
+                break
+            for turn in self.turns:
+                move = current + turn
+                if not self.snake_list.is_out_of_board(move) and move not in visited:
+                    working.append(move)
+                    visited.append(move)
+
+        return current
+
+    def update_go_to(self):
+        if len(self.snake_list) < self.snake_list.maximum // 4:
+            self.go_to = self.snake_list.food
+            return
+
+        x_corner_head = 0 if self.snake_list.head.x < GAME_TABLE_COLUMNS//2 else GAME_TABLE_COLUMNS - 1
+        y_corner_head = 0 if self.snake_list.head.y < GAME_TABLE_ROWS//2 else GAME_TABLE_ROWS - 1
+        corner_head = Point(x_corner_head, y_corner_head)
+
+        x_corner_food = 0 if self.snake_list.food.x < GAME_TABLE_COLUMNS//2 else GAME_TABLE_COLUMNS - 1
+        y_corner_food = 0 if self.snake_list.food.y < GAME_TABLE_ROWS//2 else GAME_TABLE_ROWS - 1
+        corner_food = Point(x_corner_food, y_corner_food)
+
+        if corner_head == corner_food:
+            self.go_to = self.snake_list.food
+            return
+        self.go_to = self.update_go_to_corner(corner_food)
 
     def _get_distances(self):
         self.manhattan_distances = [
@@ -88,6 +131,7 @@ class SnakeGameAI:
                 text, [pt.x*BLOCK_SIZE, pt.y*BLOCK_SIZE])
 
         self._display_block(RED, self.snake_list.food)
+        self._display_block((255, 255, 0), self.go_to, BLOCK_DRAW_OFFSET)
 
         for r, row in enumerate(self.dijkstra):
             for c, value in enumerate(row):
@@ -117,8 +161,7 @@ class SnakeGameAI:
 
         # self.snake.reset()
         self.snake_list.reset()
-
-        # self.snake_list.reset(self.snake)
+        self.go_to = self.snake_list.food
 
         self.score = len(self.snake_list)
 
@@ -174,15 +217,14 @@ class SnakeGameAI:
         steps = 0
         neighbors = []
         working = [self.snake_list.head]
-        # found_food = False
-        # found_tail = False
+
         while len(working) > 0:
             working = sorted(
                 working, key=lambda pt: pt.distance(self.snake_list.food), reverse=True)
             current = working.pop()
             self.dijkstra[current.y][current.x] = steps
-            if current == self.snake_list.food:
-                break
+            # if current == self.snake_list.food:
+            #     break
             current_direction = current.allowed_directions()
             next_attempt_h = current + \
                 (current_direction & Direction.HORIZONTAL)
@@ -205,9 +247,9 @@ class SnakeGameAI:
     def shortest_dijkstra(self):
         maximum = GAME_TABLE_COLUMNS*GAME_TABLE_ROWS
 
-        # target can be the food or the tail
-        target = self.snake_list.food
-        if self.dijkstra[target.y][target.x] == maximum:
+        # target can be the go_to or the tail
+        target = self.go_to
+        if self.dijkstra[target.y][target.x] >= maximum - 2:
             target = self.snake_list.tail
 
         while self.dijkstra[target.y][target.x] != 1:

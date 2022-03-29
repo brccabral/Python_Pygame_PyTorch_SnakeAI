@@ -36,9 +36,6 @@ class Point:
             raise TypeError(f'Type {type(other)} invalid')
         return self.x == other.x and self.y == other.y
 
-    def __hash__(self):
-        return hash((self.x, self.y))
-
     def distance(self, other: "Point") -> int:
         if type(other) != Point:
             raise TypeError(f'Type {type(other)} invalid')
@@ -81,6 +78,11 @@ class Point:
         if type(other) == int:
             return Point(self.x * other, self.y * other)
         return Point(self.x * other.x, self.y * other.y)
+
+    def __floordiv__(self, other: "Point"):
+        if type(other) == int:
+            return Point(self.x // other, self.y // other)
+        return Point(self.x // other.x, self.y // other.y)
 
     def dot(self, other: "Point"):
         if type(other) != Point and type(other) != Direction:
@@ -209,7 +211,7 @@ class SnakeLinkedList:
             self.grid[current.y][current.x] = self.maximum - 1
 
         # reset head
-        self.grid[self.head.y][self.head.x] = self.maximum
+        self.grid[self.head.y][self.head.x] = self.maximum - 2
 
     def is_collision(self, pt: Point):
         if self.is_out_of_board(pt):
