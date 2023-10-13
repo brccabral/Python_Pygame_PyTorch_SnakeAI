@@ -13,3 +13,6 @@ pip install torch torchvision torchaudio
 # pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 pip install matplotlib ipython
 ```
+
+Run with `agent.py`.  
+To train, uncomment `train()` from `agent.py`.
