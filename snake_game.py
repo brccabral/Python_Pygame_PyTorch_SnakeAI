@@ -5,8 +5,8 @@ from collections import namedtuple
 import numpy as np
 
 pygame.init()
-font = pygame.font.Font('arial.ttf', 25)
-#font = pygame.font.SysFont('arial', 25)
+font = pygame.font.Font("arial.ttf", 25)
+# font = pygame.font.SysFont('arial', 25)
 
 
 class Direction(Enum):
@@ -16,7 +16,7 @@ class Direction(Enum):
     DOWN = 4
 
 
-Point = namedtuple('Point', 'x, y')
+Point = namedtuple("Point", "x, y")
 
 # rgb colors
 WHITE = (255, 255, 255)
@@ -36,14 +36,14 @@ class SnakeGameAI:
         self.h = h
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
-        pygame.display.set_caption('Snake')
+        pygame.display.set_caption("Snake")
         self.clock = pygame.time.Clock()
 
         self.reset()
 
     def _place_food(self):
-        x = random.randint(0, (self.w-BLOCK_SIZE)//BLOCK_SIZE)*BLOCK_SIZE
-        y = random.randint(0, (self.h-BLOCK_SIZE)//BLOCK_SIZE)*BLOCK_SIZE
+        x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
+        y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
         self.food = Point(x, y)
         if self.food in self.snake:
             self._place_food()
@@ -71,7 +71,7 @@ class SnakeGameAI:
         # 3. check if game over
         reward = 0
         game_over = False
-        if self.is_collision() or self.frame_iteration > 100*len(self.snake):
+        if self.is_collision() or self.frame_iteration > 100 * len(self.snake):
             game_over = True
             reward = -10
             return reward, game_over, self.score
@@ -90,7 +90,7 @@ class SnakeGameAI:
         # 6. return game over and score
         return reward, game_over, self.score
 
-    def is_collision(self, pt: Point = None):
+    def is_collision(self, pt: Point | None = None):
         if pt is None:
             pt = self.head
 
@@ -107,13 +107,10 @@ class SnakeGameAI:
         self.display.fill(BLACK)
 
         for pt in self.snake:
-            pygame.draw.rect(self.display, BLUE1, pygame.Rect(
-                pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
-            pygame.draw.rect(self.display, BLUE2,
-                             pygame.Rect(pt.x+4, pt.y+4, 12, 12))
+            pygame.draw.rect(self.display, BLUE1, pygame.Rect(pt.x, pt.y, BLOCK_SIZE, BLOCK_SIZE))
+            pygame.draw.rect(self.display, BLUE2, pygame.Rect(pt.x + 4, pt.y + 4, 12, 12))
 
-        pygame.draw.rect(self.display, RED, pygame.Rect(
-            self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
+        pygame.draw.rect(self.display, RED, pygame.Rect(self.food.x, self.food.y, BLOCK_SIZE, BLOCK_SIZE))
 
         text = font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
@@ -153,24 +150,23 @@ class SnakeGameAI:
         self.head = Point(x, y)
 
     def reset(self):
-        """reset is called at __init__ and by AI agent
-        """
+        """reset is called at __init__ and by AI agent"""
 
         # init game state
         self.direction = Direction.RIGHT
 
-        self.head = Point(self.w/2, self.h/2)
-        self.snake = [self.head,
-                      Point(self.head.x-BLOCK_SIZE, self.head.y),
-                      Point(self.head.x-(2*BLOCK_SIZE), self.head.y)]
+        self.head = Point(self.w / 2, self.h / 2)
+        self.snake = [
+            self.head,
+            Point(self.head.x - BLOCK_SIZE, self.head.y),
+            Point(self.head.x - (2 * BLOCK_SIZE), self.head.y),
+        ]
 
         self.score = 0
-        self.food = None
         self._place_food()
         # this will limit the number of moves the snake can make
         # until it is considered game over, default to 100*snake_size
         self.frame_iteration = 0
         # possible directions in clock wise order
         # used to get the next move
-        self.clock_wise_direction = [Direction.RIGHT,
-                                     Direction.DOWN, Direction.LEFT, Direction.UP]
+        self.clock_wise_direction = [Direction.RIGHT, Direction.DOWN, Direction.LEFT, Direction.UP]

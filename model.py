@@ -1,4 +1,3 @@
-import re
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -17,21 +16,21 @@ class Linear_QNet(nn.Module):
         x = self.linear2(x)
         return x
 
-    def save(self, file_name='model.pth'):
-        model_folder_path = './model'
+    def save(self, file_name="model.pth"):
+        model_folder_path = "./model"
         os.makedirs(model_folder_path, exist_ok=True)
 
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
-    def load(self, file_name='model.pth'):
-        model_folder_path = './model'
+    def load(self, file_name="model.pth"):
+        model_folder_path = "./model"
         file_name = os.path.join(model_folder_path, file_name)
         self.load_state_dict(torch.load(file_name))
 
 
 class QTrainer:
-    def __init__(self, model: Linear_QNet, lr, gamma):
+    def __init__(self, model: Linear_QNet, lr: float, gamma: float):
         self.model = model
         self.lr = lr
         self.gamma = gamma
@@ -54,7 +53,7 @@ class QTrainer:
             action = torch.unsqueeze(action, 0)
             reward = torch.unsqueeze(reward, 0)
             # tuple with one dimension
-            done = (done, )
+            done = (done,)
 
         # 1: predict Q values with current state
         pred_action: torch.Tensor = self.model(state_old)  # list
@@ -64,10 +63,9 @@ class QTrainer:
         for index in range(len(done)):
             Q_new = reward[index]
             if not done[index]:
-                Q_new = reward[index] + self.gamma * \
-                    torch.max(self.model(state_new))
+                Q_new = reward[index] + self.gamma * torch.max(self.model(state_new))
 
-            target[index][torch.argmax(action).item()] = Q_new
+            target[index][int(torch.argmax(action).item())] = Q_new
 
         self.optimizer.zero_grad()
         loss: torch.Tensor = self.criterion(target, pred_action)
