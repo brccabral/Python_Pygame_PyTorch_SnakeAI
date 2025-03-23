@@ -1,6 +1,7 @@
 import torch
 import random
 import numpy as np
+import numpy.typing as npt
 from collections import deque
 from model import Linear_QNet, QTrainer
 from snake_game import BLOCK_SIZE, SnakeGameAI, Direction, Point
@@ -22,12 +23,14 @@ class Agent:
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate, has to be less than 1, usually 0.8-0.99
         # deque auto removes items if it gets larger than maxlen, popleft()
-        self.memory_deque = deque(maxlen=MAX_MEMORY)
+
+        # self.memory_deque.append((state, action, reward, next_state, game_over))
+        self.memory_deque: deque[tuple[npt.NDArray[np.int_], list[int], int, npt.NDArray[np.int_], bool]] = deque(maxlen=MAX_MEMORY)
 
         self.model: Linear_QNet = Linear_QNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
         self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
 
-    def get_state(self, game: SnakeGameAI):
+    def get_state(self, game: SnakeGameAI) -> npt.NDArray[np.int_]:
         """From the game, get some parameters and returns a list
         0: If there is any danger Straight,
         1: If there is any danger Right,
@@ -60,7 +63,7 @@ class Agent:
         is_direction_up = game.direction == Direction.UP
         is_direction_down = game.direction == Direction.DOWN
 
-        state = [
+        state: list[bool] = [
             # Danger straight (same direction)
             (is_direction_right and game.is_collision(point_right))
             or (is_direction_left and game.is_collision(point_left))
@@ -90,7 +93,7 @@ class Agent:
 
         return np.array(state, dtype=int)
 
-    def remember(self, state, action, reward, next_state, game_over):
+    def remember(self, state: npt.NDArray[np.int_], action: list[int], reward: int, next_state: npt.NDArray[np.int_], game_over: bool):
         # memory_deque calls popleft automatically if size greater than MAX_MEMORY
         # store as a tuple containing all variables
         self.memory_deque.append((state, action, reward, next_state, game_over))
@@ -107,10 +110,10 @@ class Agent:
         states, actions, rewards, next_states, game_overs = zip(*batch_sample)
         self.trainer.train_step(states, actions, rewards, next_states, game_overs)
 
-    def train_short_memory(self, state, action, reward, next_state, game_over):
-        self.trainer.train_step(state, action, reward, next_state, game_over)
+    def train_short_memory(self, state: npt.NDArray[np.int_], action: list[int], reward: int, next_state: npt.NDArray[np.int_], game_over: bool):
+        self.trainer.train_step((state, ), (action, ), (reward, ), (next_state, ), (game_over, ))
 
-    def get_action(self, state):
+    def get_action(self, state: npt.NDArray[np.int_]):
         # random moves: tradeoff between exploration vs exploitation
         self.epsilon = 80 - self.number_of_games
         action = [0, 0, 0]
@@ -130,7 +133,7 @@ class Agent:
 
         return action
 
-    def get_play(self, state):
+    def get_play(self, state: npt.NDArray[np.int_]):
         self.model.eval()
         action = [0, 0, 0]
         state0 = torch.tensor(state, dtype=torch.float)
@@ -142,8 +145,8 @@ class Agent:
 
 
 def train():
-    plot_scores = []
-    plot_mean_scores = []
+    plot_scores: list[int] = []
+    plot_mean_scores: list[float] = []
     total_score = 0
     best_score = 0
     agent = Agent()
@@ -191,7 +194,7 @@ def main():
     while True:
         state_old = agent.get_state(game)
         action = agent.get_play(state_old)
-        reward, game_over, score = game.play_step(action)
+        _reward, game_over, _score = game.play_step(action)
         if game_over:
             game.reset()
 

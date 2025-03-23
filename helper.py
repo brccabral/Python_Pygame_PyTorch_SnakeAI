@@ -4,7 +4,7 @@ from IPython import display
 plt.ion()  # interactive on
 
 
-def plot(scores, mean_scores):
+def plot(scores: list[int], mean_scores: list[float]):
     display.clear_output(wait=True)
     display.display(plt.gcf())  # get current figure
     plt.clf()  # clear figure

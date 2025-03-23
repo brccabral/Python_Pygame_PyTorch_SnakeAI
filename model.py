@@ -3,10 +3,12 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import os
+import numpy as np
+import numpy.typing as npt
 
 
 class Linear_QNet(nn.Module):
-    def __init__(self, input_size, hidden_size, output_size):
+    def __init__(self, input_size: int, hidden_size: int, output_size: int):
         super().__init__()
         self.linear1 = nn.Linear(input_size, hidden_size)
         self.linear2 = nn.Linear(hidden_size, output_size)
@@ -16,14 +18,14 @@ class Linear_QNet(nn.Module):
         x = self.linear2(x)
         return x
 
-    def save(self, file_name="model.pth"):
+    def save(self, file_name: str = "model.pth"):
         model_folder_path = "./model"
         os.makedirs(model_folder_path, exist_ok=True)
 
         file_name = os.path.join(model_folder_path, file_name)
         torch.save(self.state_dict(), file_name)
 
-    def load(self, file_name="model.pth"):
+    def load(self, file_name: str = "model.pth"):
         model_folder_path = "./model"
         file_name = os.path.join(model_folder_path, file_name)
         self.load_state_dict(torch.load(file_name))
@@ -38,22 +40,19 @@ class QTrainer:
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
 
-    def train_step(self, state_old, action, reward, state_new, done):
-        state_old = torch.tensor(state_old, dtype=torch.float)
-        state_new = torch.tensor(state_new, dtype=torch.float)
-        action = torch.tensor(action, dtype=torch.long)
-        reward = torch.tensor(reward, dtype=torch.float)
-
-        if len(state_old.shape) == 1:
-            # received only one state
-            # need to change to shape (1, x)
-            # appends one dimension at beginning of each tensor
-            state_old = torch.unsqueeze(state_old, 0)
-            state_new = torch.unsqueeze(state_new, 0)
-            action = torch.unsqueeze(action, 0)
-            reward = torch.unsqueeze(reward, 0)
-            # tuple with one dimension
-            done = (done,)
+    def train_step(
+        self,
+        state_old_: tuple[npt.NDArray[np.int_]],
+        action_: tuple[list[int]],
+        reward_: tuple[int],
+        state_new_: tuple[npt.NDArray[np.int_]],
+        done_: tuple[bool],
+    ):
+        state_old = torch.tensor(np.array(state_old_), dtype=torch.float)
+        state_new = torch.tensor(np.array(state_new_), dtype=torch.float)
+        action = torch.tensor(np.array(action_), dtype=torch.long)
+        reward = torch.tensor(np.array(reward_), dtype=torch.float)
+        done = done_
 
         # 1: predict Q values with current state
         pred_action: torch.Tensor = self.model(state_old)  # list

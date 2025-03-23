@@ -1,7 +1,7 @@
 import pygame
 import random
 from enum import Enum
-from collections import namedtuple
+from typing import NamedTuple
 import numpy as np
 
 pygame.init()
@@ -16,7 +16,10 @@ class Direction(Enum):
     DOWN = 4
 
 
-Point = namedtuple("Point", "x, y")
+class Point(NamedTuple):
+    x: float
+    y: float
+
 
 # rgb colors
 WHITE = (255, 255, 255)
@@ -31,7 +34,7 @@ SPEED = 40
 
 class SnakeGameAI:
 
-    def __init__(self, w=640, h=480):
+    def __init__(self, w: int = 640, h: int = 480):
         self.w = w
         self.h = h
         # init display
@@ -48,7 +51,7 @@ class SnakeGameAI:
         if self.food in self.snake:
             self._place_food()
 
-    def play_step(self, action):
+    def play_step(self, action: list[int]):
         """receives an action from the agent and updates the game
 
         Args:
@@ -116,7 +119,7 @@ class SnakeGameAI:
         self.display.blit(text, [0, 0])
         pygame.display.flip()
 
-    def _move(self, action):
+    def _move(self, action: list[int]):
         """move snake head to new position
 
         Args:
