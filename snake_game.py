@@ -44,12 +44,15 @@ class SnakeGameAI:
 
         self.reset()
 
-    def _place_food(self):
+    def _new_food(self):
         x = random.randint(0, (self.w - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
         y = random.randint(0, (self.h - BLOCK_SIZE) // BLOCK_SIZE) * BLOCK_SIZE
         self.food = Point(x, y)
+
+    def _place_food(self):
+        self._new_food()
         if self.food in self.snake:
-            self._place_food()
+            self._new_food()
 
     def play_step(self, action: list[int]):
         """receives an action from the agent and updates the game
