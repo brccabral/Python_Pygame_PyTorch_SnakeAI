@@ -37,6 +37,7 @@ class SnakeGameAI:
     def __init__(self, w: int = 640, h: int = 480):
         self.w = w
         self.h = h
+        self.best_score = 0
         # init display
         self.display = pygame.display.set_mode((self.w, self.h))
         pygame.display.set_caption("Snake")
@@ -120,6 +121,8 @@ class SnakeGameAI:
 
         text = font.render("Score: " + str(self.score), True, WHITE)
         self.display.blit(text, [0, 0])
+        text = font.render("Record: " + str(self.best_score), True, WHITE)
+        self.display.blit(text, [0, 40])
         pygame.display.flip()
 
     def _move(self, action: list[int]):
