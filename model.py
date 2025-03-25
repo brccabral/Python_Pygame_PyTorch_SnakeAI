@@ -32,10 +32,11 @@ class Linear_QNet(nn.Module):
 
 
 class QTrainer:
-    def __init__(self, model: Linear_QNet, lr: float, gamma: float):
+    def __init__(self, model: Linear_QNet, lr: float, gamma: float, device: str):
         self.model = model
         self.lr = lr
         self.gamma = gamma
+        self.device = device
 
         self.optimizer = optim.Adam(model.parameters(), lr=self.lr)
         self.criterion = nn.MSELoss()
@@ -48,10 +49,10 @@ class QTrainer:
         state_new_: tuple[npt.NDArray[np.int_]],
         done_: tuple[bool],
     ):
-        state_old = torch.tensor(np.array(state_old_), dtype=torch.float)
-        state_new = torch.tensor(np.array(state_new_), dtype=torch.float)
-        action = torch.tensor(np.array(action_), dtype=torch.long)
-        reward = torch.tensor(np.array(reward_), dtype=torch.float)
+        state_old = torch.tensor(np.array(state_old_), dtype=torch.float, device=self.device)
+        state_new = torch.tensor(np.array(state_new_), dtype=torch.float, device=self.device)
+        action = torch.tensor(np.array(action_), dtype=torch.long, device=self.device)
+        reward = torch.tensor(np.array(reward_), dtype=torch.float, device=self.device)
         done = done_
 
         # 1: predict Q values with current state

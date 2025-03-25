@@ -18,17 +18,21 @@ OUTPUT_SIZE = 3  # has to be the number of possible actions, Agent.get_action
 
 
 class Agent:
-    def __init__(self):
+    def __init__(self, device: str):
         self.number_of_games = 0
         self.epsilon = 0  # randomness
         self.gamma = 0.9  # discount rate, has to be less than 1, usually 0.8-0.99
+        self.device = device
         # deque auto removes items if it gets larger than maxlen, popleft()
 
         # self.memory_deque.append((state, action, reward, next_state, game_over))
-        self.memory_deque: deque[tuple[npt.NDArray[np.int_], list[int], int, npt.NDArray[np.int_], bool]] = deque(maxlen=MAX_MEMORY)
+        self.memory_deque: deque[tuple[npt.NDArray[np.int_], list[int], int, npt.NDArray[np.int_], bool]] = deque(
+            maxlen=MAX_MEMORY
+        )
 
         self.model: Linear_QNet = Linear_QNet(INPUT_SIZE, HIDDEN_SIZE, OUTPUT_SIZE)
-        self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma)
+        self.model.to(self.device)
+        self.trainer: QTrainer = QTrainer(self.model, lr=LR, gamma=self.gamma, device=self.device)
 
     def get_state(self, game: SnakeGameAI) -> npt.NDArray[np.int_]:
         """From the game, get some parameters and returns a list
@@ -93,7 +97,14 @@ class Agent:
 
         return np.array(state, dtype=int)
 
-    def remember(self, state: npt.NDArray[np.int_], action: list[int], reward: int, next_state: npt.NDArray[np.int_], game_over: bool):
+    def remember(
+        self,
+        state: npt.NDArray[np.int_],
+        action: list[int],
+        reward: int,
+        next_state: npt.NDArray[np.int_],
+        game_over: bool,
+    ):
         # memory_deque calls popleft automatically if size greater than MAX_MEMORY
         # store as a tuple containing all variables
         self.memory_deque.append((state, action, reward, next_state, game_over))
@@ -110,8 +121,15 @@ class Agent:
         states, actions, rewards, next_states, game_overs = zip(*batch_sample)
         self.trainer.train_step(states, actions, rewards, next_states, game_overs)
 
-    def train_short_memory(self, state: npt.NDArray[np.int_], action: list[int], reward: int, next_state: npt.NDArray[np.int_], game_over: bool):
-        self.trainer.train_step((state, ), (action, ), (reward, ), (next_state, ), (game_over, ))
+    def train_short_memory(
+        self,
+        state: npt.NDArray[np.int_],
+        action: list[int],
+        reward: int,
+        next_state: npt.NDArray[np.int_],
+        game_over: bool,
+    ):
+        self.trainer.train_step((state,), (action,), (reward,), (next_state,), (game_over,))
 
     def get_action(self, state: npt.NDArray[np.int_]):
         # random moves: tradeoff between exploration vs exploitation
@@ -123,7 +141,7 @@ class Agent:
             move = random.randint(0, 2)
             action[move] = 1
         else:
-            state0 = torch.tensor(state, dtype=torch.float)
+            state0 = torch.tensor(state, dtype=torch.float, device=self.device)
             # prediction is a list of floats
             prediction = self.model.forward(state0)
             # get the larger number index
@@ -136,7 +154,7 @@ class Agent:
     def get_play(self, state: npt.NDArray[np.int_]):
         self.model.eval()
         action = [0, 0, 0]
-        state0 = torch.tensor(state, dtype=torch.float)
+        state0 = torch.tensor(state, dtype=torch.float, device=self.device)
         prediction = self.model.forward(state0)
         move = int(torch.argmax(prediction).item())
         action[move] = 1
@@ -144,12 +162,12 @@ class Agent:
         return action
 
 
-def train():
+def train(device: str):
     plot_scores: list[int] = []
     plot_mean_scores: list[float] = []
     total_score = 0
     best_score = 0
-    agent = Agent()
+    agent = Agent(device)
     game = SnakeGameAI()
     while True:
         # get old state
@@ -187,8 +205,8 @@ def train():
             agent.train_long_memory()
 
 
-def main():
-    agent = Agent()
+def main(device: str):
+    agent = Agent(device)
     agent.model.load()
     game = SnakeGameAI()
     while True:
@@ -200,5 +218,6 @@ def main():
 
 
 if __name__ == "__main__":
-    train()
-    main()
+    device = "cuda" if torch.cuda.is_available() else "mps" if torch.backends.mps.is_available() else "cpu"
+    train(device)
+    main(device)
