@@ -143,7 +143,9 @@ class Agent:
         else:
             state0 = torch.tensor(state, dtype=torch.float, device=self.device)
             # prediction is a list of floats
-            prediction = self.model.forward(state0)
+            self.model.eval()
+            with torch.no_grad():
+                prediction = self.model.forward(state0)
             # get the larger number index
             move = int(torch.argmax(prediction).item())
             # set the index to 1
@@ -155,7 +157,9 @@ class Agent:
         self.model.eval()
         action = [0, 0, 0]
         state0 = torch.tensor(state, dtype=torch.float, device=self.device)
-        prediction = self.model.forward(state0)
+        self.model.eval()
+        with torch.no_grad():
+            prediction = self.model.forward(state0)
         move = int(torch.argmax(prediction).item())
         action[move] = 1
 

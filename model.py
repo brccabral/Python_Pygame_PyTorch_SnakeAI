@@ -54,9 +54,11 @@ class QTrainer:
         action = torch.tensor(np.array(action_), dtype=torch.long, device=self.device)
 
         # 1: predict Q values with current state
+        self.model.train()
         pred_action: torch.Tensor = self.model(state_old)  # list
 
         # 2: Q_new = r + y * max(next_predicted_Q_value) -> only do this if not done
+        self.model.eval()
         target = pred_action.detach().clone()
         with torch.no_grad():
             for index, done in enumerate(done_):
@@ -66,6 +68,7 @@ class QTrainer:
 
                 target[index][int(torch.argmax(action[index]).item())] = Q_new
 
+        self.model.train()
         self.optimizer.zero_grad()
         loss: torch.Tensor = self.criterion(pred_action, target)
         loss.backward()
